@@ -2,155 +2,298 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Перекуп Simulator</title>
 
 <style>
-*{box-sizing:border-box;font-family:Arial,sans-serif}
-
-body{
- margin:0;
- background:#f2f3f5;
- color:#111;
+* {
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
 }
 
-.header{
- background:white;
- padding:18px;
- position:sticky;
- top:0;
- z-index:5;
- border-bottom:1px solid #ddd;
+body {
+    margin: 0;
+    background: #f1f3f5;
+    color: #111;
 }
 
-.title{font-size:24px;font-weight:bold}
-.balance{margin-top:7px;font-size:19px;font-weight:bold}
-
-.nav{
- display:flex;
- background:white;
- position:fixed;
- bottom:0;
- left:0;
- right:0;
- z-index:10;
- border-top:1px solid #ddd;
+button, input {
+    font: inherit;
 }
 
-.nav button{
- flex:1;
- border:0;
- background:white;
- padding:12px 4px;
- font-size:12px;
+.header {
+    background: white;
+    padding: 18px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-bottom: 1px solid #ddd;
 }
 
-.container{
- padding:15px;
- padding-bottom:80px;
+.logo {
+    font-size: 23px;
+    font-weight: 800;
 }
 
-.search{
- width:100%;
- padding:14px;
- border:0;
- border-radius:12px;
- font-size:16px;
- margin-bottom:15px;
+.balance {
+    margin-top: 7px;
+    font-size: 20px;
+    font-weight: 700;
 }
 
-.categories{
- display:grid;
- grid-template-columns:repeat(2,1fr);
- gap:10px;
- margin-bottom:20px;
+.container {
+    padding: 15px;
+    padding-bottom: 90px;
 }
 
-.category{
- background:white;
- border:0;
- border-radius:14px;
- padding:17px 8px;
- font-size:15px;
+.search {
+    width: 100%;
+    border: 0;
+    background: white;
+    border-radius: 13px;
+    padding: 14px;
+    outline: none;
+    margin-bottom: 13px;
+    box-shadow: 0 1px 4px #ddd;
 }
 
-.section-title{
- font-size:21px;
- font-weight:bold;
- margin:15px 0 10px;
+.categories {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 9px;
+    margin-bottom: 20px;
 }
 
-.listing,.item,.chat{
- background:white;
- border-radius:15px;
- padding:15px;
- margin-bottom:12px;
- box-shadow:0 1px 5px #ddd;
+.category {
+    border: 0;
+    background: white;
+    border-radius: 13px;
+    padding: 15px 8px;
+    box-shadow: 0 1px 4px #ddd;
+    cursor: pointer;
 }
 
-.listing-title{
- font-size:19px;
- font-weight:bold;
+.category:active {
+    transform: scale(.97);
 }
 
-.price{
- font-size:18px;
- font-weight:bold;
- margin-top:8px;
+.section-title {
+    font-size: 21px;
+    font-weight: 800;
+    margin: 18px 0 11px;
 }
 
-.seller{
- color:#777;
- margin-top:5px;
+.card {
+    background: white;
+    border-radius: 16px;
+    padding: 15px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 5px #ddd;
 }
 
-.btn{
- width:100%;
- border:0;
- background:#2481cc;
- color:white;
- padding:12px;
- border-radius:10px;
- font-size:16px;
- margin-top:10px;
+.item-title {
+    font-size: 19px;
+    font-weight: 800;
 }
 
-.sell{
- background:#20a05a;
+.description {
+    margin-top: 6px;
+    color: #555;
 }
 
-.chatbtn{
- background:#555;
+.price {
+    font-size: 19px;
+    font-weight: 800;
+    margin-top: 9px;
 }
 
-.hidden{display:none}
-
-.message{
- padding:10px;
- border-radius:10px;
- margin:7px 0;
- background:#eee;
+.market-price {
+    color: #777;
+    font-size: 13px;
+    margin-top: 4px;
 }
 
-.me{
- background:#d9fdd3;
- text-align:right;
+.seller {
+    color: #777;
+    margin-top: 7px;
 }
 
-input.chatinput{
- width:100%;
- padding:12px;
- border:1px solid #ddd;
- border-radius:10px;
- margin-top:8px;
+.btn {
+    width: 100%;
+    border: 0;
+    border-radius: 11px;
+    padding: 12px;
+    margin-top: 10px;
+    background: #2481cc;
+    color: white;
+    cursor: pointer;
 }
 
-.back{
- border:0;
- background:none;
- font-size:16px;
- padding:0;
- margin-bottom:12px;
+.btn.green {
+    background: #20a05a;
+}
+
+.btn.gray {
+    background: #777;
+}
+
+.btn.red {
+    background: #d64545;
+}
+
+.btn.orange {
+    background: #e88922;
+}
+
+.nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 67px;
+    display: flex;
+    background: white;
+    border-top: 1px solid #ddd;
+    z-index: 50;
+}
+
+.nav button {
+    flex: 1;
+    border: 0;
+    background: white;
+    font-size: 12px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.back {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    margin-bottom: 12px;
+    font-size: 16px;
+}
+
+.chat-box {
+    background: white;
+    border-radius: 16px;
+    padding: 12px;
+    min-height: 300px;
+}
+
+.message {
+    max-width: 85%;
+    padding: 10px 12px;
+    border-radius: 13px;
+    margin: 7px 0;
+    background: #eeeeee;
+    line-height: 1.35;
+}
+
+.message.me {
+    margin-left: auto;
+    background: #d8f8d1;
+}
+
+.message.system {
+    margin: 10px auto;
+    background: #eee;
+    color: #777;
+    text-align: center;
+    font-size: 13px;
+}
+
+.chat-input-row {
+    display: flex;
+    gap: 7px;
+    margin-top: 10px;
+}
+
+.chat-input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #ddd;
+    border-radius: 11px;
+    padding: 12px;
+    outline: none;
+}
+
+.send {
+    width: 50px;
+    border: 0;
+    border-radius: 11px;
+    background: #2481cc;
+    color: white;
+}
+
+.typing {
+    color: #777;
+    font-size: 13px;
+    margin: 7px 2px;
+}
+
+.stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.good {
+    color: #159447;
+}
+
+.bad {
+    color: #d33;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal-box {
+    background: white;
+    width: 100%;
+    max-width: 600px;
+    border-radius: 20px 20px 0 0;
+    padding: 20px;
+}
+
+.modal-box input {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 11px;
+    padding: 13px;
+    outline: none;
+    margin-top: 8px;
+}
+
+.small {
+    font-size: 13px;
+    color: #777;
+}
+
+.empty {
+    text-align: center;
+    color: #777;
+    padding: 30px 10px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: #eee;
+    font-size: 12px;
+    margin-top: 7px;
 }
 </style>
 </head>
@@ -158,87 +301,68 @@ input.chatinput{
 <body>
 
 <div class="header">
- <div class="title">🏪 Перекуп Simulator</div>
- <div class="balance" id="balance">💰 15 000 ₽</div>
+    <div class="logo">🏪 Перекуп Simulator</div>
+    <div class="balance" id="balance">💰 15 000 ₽</div>
 </div>
 
 <div class="container">
 
-<!-- МАГАЗИН -->
+<!-- РЫНОК -->
 
-<div id="shop">
+<div id="marketPage">
 
-<input
- class="search"
- placeholder="🔎 Поиск товаров..."
- oninput="searchItems(this.value)"
->
+    <input
+        id="search"
+        class="search"
+        placeholder="🔎 Поиск товара..."
+        oninput="renderMarket()"
+    >
 
-<div class="categories">
-<button class="category" onclick="filterCategory('Телефоны')">📱 Телефоны</button>
-<button class="category" onclick="filterCategory('Машины')">🚗 Машины</button>
-<button class="category" onclick="filterCategory('Игрушки')">🧸 Игрушки</button>
-<button class="category" onclick="filterCategory('Техника')">💻 Техника</button>
-<button class="category" onclick="filterCategory('Одежда')">👟 Одежда</button>
-<button class="category" onclick="filterCategory('Другое')">📦 Другое</button>
-</div>
+    <div class="categories">
+        <button class="category" onclick="setCategory('Все')">🏪 Все</button>
+        <button class="category" onclick="setCategory('Телефоны')">📱 Телефоны</button>
+        <button class="category" onclick="setCategory('Машины')">🚗 Машины</button>
+        <button class="category" onclick="setCategory('Игрушки')">🧸 Игрушки</button>
+        <button class="category" onclick="setCategory('Техника')">💻 Техника</button>
+        <button class="category" onclick="setCategory('Другое')">📦 Другое</button>
+    </div>
 
-<div class="section-title">📢 Объявления</div>
+    <div class="section-title">📢 Объявления</div>
 
-<div id="listings">
-
-<div class="listing" data-category="Телефоны" data-name="iPhone 12">
-<div class="listing-title">📱 iPhone 12</div>
-<div>64 GB, хорошее состояние</div>
-<div class="price">13 500 ₽</div>
-<div class="seller">👤 Андрей</div>
-<button class="btn" onclick="openChat('Андрей','iPhone 12',13500)">
-💬 Написать продавцу
-</button>
-<button class="btn" onclick="buyItem('iPhone 12',13500,'Андрей')">
-Купить
-</button>
-</div>
-
-<div class="listing" data-category="Игрушки" data-name="LEGO Technic">
-<div class="listing-title">🧸 LEGO Technic</div>
-<div>Почти новый набор</div>
-<div class="price">4 000 ₽</div>
-<div class="seller">👤 Максим</div>
-<button class="btn" onclick="openChat('Максим','LEGO Technic',4000)">
-💬 Написать продавцу
-</button>
-<button class="btn" onclick="buyItem('LEGO Technic',4000,'Максим')">
-Купить
-</button>
-</div>
-
-<div class="listing" data-category="Техника" data-name="PlayStation 4">
-<div class="listing-title">🎮 PlayStation 4</div>
-<div>Работает отлично</div>
-<div class="price">12 000 ₽</div>
-<div class="seller">👤 Денис</div>
-<button class="btn" onclick="openChat('Денис','PlayStation 4',12000)">
-💬 Написать продавцу
-</button>
-<button class="btn" onclick="buyItem('PlayStation 4',12000,'Денис')">
-Купить
-</button>
-</div>
+    <div id="marketList"></div>
 
 </div>
+
+
+<!-- МОИ ТОВАРЫ -->
+
+<div id="inventoryPage" class="hidden">
+
+    <div class="section-title">📦 Мои товары</div>
+
+    <div id="inventoryList"></div>
+
 </div>
 
 
-<!-- ИНВЕНТАРЬ -->
+<!-- МОИ ОБЪЯВЛЕНИЯ -->
 
-<div id="inventory" class="hidden">
+<div id="myListingsPage" class="hidden">
 
-<div class="section-title">📦 Мои товары</div>
+    <div class="section-title">🏷️ Мои объявления</div>
 
-<div id="inventoryList">
-<div>У тебя пока нет товаров.</div>
+    <div id="myListingsList"></div>
+
 </div>
+
+
+<!-- ЧАТЫ -->
+
+<div id="chatsPage" class="hidden">
+
+    <div class="section-title">💬 Чаты</div>
+
+    <div id="chatsList"></div>
 
 </div>
 
@@ -247,390 +371,1536 @@ input.chatinput{
 
 <div id="chatPage" class="hidden">
 
-<button class="back" onclick="showShop()">← Назад</button>
+    <button class="back" onclick="showPage('chatsPage')">
+        ← Назад
+    </button>
 
-<div class="section-title" id="chatTitle">💬 Чат</div>
+    <div class="section-title" id="chatName">
+        💬 Чат
+    </div>
 
-<div class="chat">
+    <div class="chat-box">
 
-<div id="messages"></div>
+        <div id="messages"></div>
 
-<input
- class="chatinput"
- id="messageInput"
- placeholder="Напиши сообщение..."
->
+        <div id="typing" class="typing"></div>
 
-<button class="btn" onclick="sendMessage()">
-Отправить
-</button>
+        <div class="chat-input-row">
+            <input
+                id="chatInput"
+                class="chat-input"
+                placeholder="Написать сообщение..."
+                onkeydown="if(event.key==='Enter') sendMessage()"
+            >
+
+            <button class="send" onclick="sendMessage()">
+                ➤
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ИСТОРИЯ -->
+
+<div id="historyPage" class="hidden">
+
+    <div class="section-title">📊 История</div>
+
+    <div id="historyList"></div>
 
 </div>
 
 </div>
 
 
-<!-- МОИ ЧАТЫ -->
-
-<div id="chats" class="hidden">
-
-<div class="section-title">💬 Чаты</div>
-
-<div id="chatList">
-<div>Чатов пока нет.</div>
-</div>
-
-</div>
-
-</div>
-
+<!-- НИЖНЕЕ МЕНЮ -->
 
 <div class="nav">
 
-<button onclick="showShop()">🏪<br>Рынок</button>
-<button onclick="showInventory()">📦<br>Товары</button>
-<button onclick="showChats()">💬<br>Чаты</button>
+    <button onclick="showPage('marketPage')">
+        🏪<br>Рынок
+    </button>
+
+    <button onclick="showPage('inventoryPage')">
+        📦<br>Товары
+    </button>
+
+    <button onclick="showPage('myListingsPage')">
+        🏷️<br>Продажи
+    </button>
+
+    <button onclick="showPage('chatsPage')">
+        💬<br>Чаты
+    </button>
+
+    <button onclick="showPage('historyPage')">
+        📊<br>История
+    </button>
+
+</div>
+
+
+<!-- МОДАЛЬНОЕ ОКНО ПРОДАЖИ -->
+
+<div id="sellModal" class="modal hidden">
+
+    <div class="modal-box">
+
+        <div class="section-title">
+            🏷️ Выставить товар
+        </div>
+
+        <div id="sellInfo"></div>
+
+        <input
+            id="sellPrice"
+            type="number"
+            placeholder="Цена продажи"
+        >
+
+        <button class="btn green" onclick="createListing()">
+            📢 Выставить объявление
+        </button>
+
+        <button class="btn gray" onclick="closeSellModal()">
+            Отмена
+        </button>
+
+    </div>
 
 </div>
 
 
 <script>
 
-let balance = 15000;
+/* =========================================================
+   ДАННЫЕ
+========================================================= */
 
-let inventory = [];
+let game = JSON.parse(
+    localStorage.getItem("perekupGame")
+) || {
 
-let currentSeller = "";
-let currentItem = "";
-let currentPrice = 0;
+    balance: 15000,
 
-let chats = {};
+    inventory: [],
 
+    listings: [],
 
-function updateBalance(){
+    chats: {},
 
- document.getElementById("balance").textContent =
- "💰 " + balance.toLocaleString("ru-RU") + " ₽";
+    history: []
 
-}
-
-
-function buyItem(name,price,seller){
-
- if(balance < price){
-
-  alert("❌ Недостаточно денег!");
-
-  return;
-
- }
-
- balance -= price;
-
- inventory.push({
-  name:name,
-  buyPrice:price,
-  seller:seller
- });
-
- updateBalance();
-
- updateInventory();
-
- alert("✅ Ты купил " + name);
-
-}
+};
 
 
-function updateInventory(){
+let selectedCategory = "Все";
 
- const list=document.getElementById("inventoryList");
+let currentChat = null;
 
- if(inventory.length===0){
-
-  list.innerHTML="<div>У тебя пока нет товаров.</div>";
-
-  return;
-
- }
-
- list.innerHTML="";
-
- inventory.forEach((item,index)=>{
-
-  const div=document.createElement("div");
-
-  div.className="item";
-
-  div.innerHTML=`
-
-  <b>📦 ${item.name}</b>
-
-  <div>Куплено за: ${item.buyPrice.toLocaleString("ru-RU")} ₽</div>
-
-  <button class="btn sell"
-  onclick="sellItem(${index})">
-  💰 Выставить на продажу
-  </button>
-
-  `;
-
-  list.appendChild(div);
-
- });
-
-}
+let sellingInventoryIndex = null;
 
 
-function sellItem(index){
+/* =========================================================
+   ТОВАРЫ РЫНКА
+========================================================= */
 
- const item=inventory[index];
+const market = [
 
- let price=prompt(
-  "За сколько выставить " + item.name + "?",
-  Math.round(item.buyPrice*1.2)
- );
+    {
+        id: 1,
+        name: "iPhone 12",
+        category: "Телефоны",
+        description: "64 GB, хорошее состояние",
+        price: 13500,
+        marketPrice: 14500,
+        seller: "Андрей"
+    },
 
- if(price===null)return;
+    {
+        id: 2,
+        name: "Samsung Galaxy S21",
+        category: "Телефоны",
+        description: "128 GB, есть небольшие царапины",
+        price: 11500,
+        marketPrice: 14500,
+        seller: "Илья"
+    },
 
- price=Number(price);
+    {
+        id: 3,
+        name: "PlayStation 4",
+        category: "Техника",
+        description: "Работает отлично, два геймпада",
+        price: 12000,
+        marketPrice: 16000,
+        seller: "Денис"
+    },
 
- if(!price || price<=0){
+    {
+        id: 4,
+        name: "LEGO Technic",
+        category: "Игрушки",
+        description: "Почти новый набор",
+        price: 4000,
+        marketPrice: 5500,
+        seller: "Максим"
+    },
 
-  alert("Неверная цена");
+    {
+        id: 5,
+        name: "Nintendo Switch",
+        category: "Техника",
+        description: "Хорошее состояние",
+        price: 18000,
+        marketPrice: 20000,
+        seller: "Роман"
+    },
 
-  return;
+    {
+        id: 6,
+        name: "BMW E46",
+        category: "Машины",
+        description: "Есть небольшие проблемы",
+        price: 450000,
+        marketPrice: 500000,
+        seller: "Сергей"
+    }
 
- }
+];
 
- balance += price;
 
- inventory.splice(index,1);
+/* =========================================================
+   СОХРАНЕНИЕ
+========================================================= */
 
- updateBalance();
+function saveGame() {
 
- updateInventory();
-
- alert(
-  "✅ Товар продан за "+
-  price.toLocaleString("ru-RU")+
-  " ₽"
- );
+    localStorage.setItem(
+        "perekupGame",
+        JSON.stringify(game)
+    );
 
 }
 
 
-function openChat(seller,item,price){
+/* =========================================================
+   БАЛАНС
+========================================================= */
 
- currentSeller=seller;
- currentItem=item;
- currentPrice=price;
+function updateBalance() {
 
- document.getElementById("shop").classList.add("hidden");
- document.getElementById("inventory").classList.add("hidden");
- document.getElementById("chats").classList.add("hidden");
- document.getElementById("chatPage").classList.remove("hidden");
-
- document.getElementById("chatTitle").textContent=
- "💬 " + seller;
-
- if(!chats[seller]){
-
-  chats[seller]=[
-   {
-    text:"Здравствуйте! Интересует товар?",
-    me:false
-   }
-  ];
-
- }
-
- renderMessages();
+    document.getElementById("balance").textContent =
+        "💰 " +
+        game.balance.toLocaleString("ru-RU") +
+        " ₽";
 
 }
 
 
-function renderMessages(){
+/* =========================================================
+   СТРАНИЦЫ
+========================================================= */
 
- const box=document.getElementById("messages");
+function showPage(pageId) {
 
- box.innerHTML="";
+    const pages = [
+        "marketPage",
+        "inventoryPage",
+        "myListingsPage",
+        "chatsPage",
+        "chatPage",
+        "historyPage"
+    ];
 
- chats[currentSeller].forEach(m=>{
+    pages.forEach(id => {
 
-  const div=document.createElement("div");
+        document
+            .getElementById(id)
+            .classList.add("hidden");
 
-  div.className="message "+(m.me?"me":"");
+    });
 
-  div.textContent=m.text;
+    document
+        .getElementById(pageId)
+        .classList.remove("hidden");
 
-  box.appendChild(div);
+    if(pageId === "marketPage")
+        renderMarket();
 
- });
+    if(pageId === "inventoryPage")
+        renderInventory();
 
-}
+    if(pageId === "myListingsPage")
+        renderMyListings();
 
+    if(pageId === "chatsPage")
+        renderChats();
 
-function sendMessage(){
-
- const input=document.getElementById("messageInput");
-
- const text=input.value.trim();
-
- if(!text)return;
-
- chats[currentSeller].push({
-  text:text,
-  me:true
- });
-
- input.value="";
-
- renderMessages();
-
- /*
-    ПОКА ПРОСТАЯ ЗАГЛУШКА.
-    Позже здесь будет серверная задержка
-    10–60 минут.
- */
-
- setTimeout(()=>{
-
-  const replies=[
-   "Могу немного уступить.",
-   "Цена окончательная.",
-   "За сколько готовы забрать?",
-   "Хорошо, договорились.",
-   "Могу сделать скидку."
-  ];
-
-  const reply=
-   replies[Math.floor(Math.random()*replies.length)];
-
-  chats[currentSeller].push({
-   text:reply,
-   me:false
-  });
-
-  renderMessages();
-
- },5000);
+    if(pageId === "historyPage")
+        renderHistory();
 
 }
 
 
-function showShop(){
+/* =========================================================
+   РЫНОК
+========================================================= */
 
- hideAll();
+function setCategory(category) {
 
- document.getElementById("shop")
- .classList.remove("hidden");
+    selectedCategory = category;
 
-}
-
-
-function showInventory(){
-
- hideAll();
-
- document.getElementById("inventory")
- .classList.remove("hidden");
-
- updateInventory();
+    renderMarket();
 
 }
 
 
-function showChats(){
+function renderMarket() {
 
- hideAll();
+    const list =
+        document.getElementById("marketList");
 
- document.getElementById("chats")
- .classList.remove("hidden");
+    const search =
+        document
+        .getElementById("search")
+        .value
+        .toLowerCase()
+        .trim();
 
- updateChats();
+    const items = market.filter(item => {
+
+        const categoryOK =
+            selectedCategory === "Все" ||
+            item.category === selectedCategory;
+
+        const searchOK =
+            item.name
+                .toLowerCase()
+                .includes(search);
+
+        return categoryOK && searchOK;
+
+    });
+
+    list.innerHTML = "";
+
+    if(items.length === 0) {
+
+        list.innerHTML =
+            '<div class="empty">Ничего не найдено.</div>';
+
+        return;
+
+    }
+
+    items.forEach(item => {
+
+        const card =
+            document.createElement("div");
+
+        card.className = "card";
+
+        let priceClass = "";
+
+        if(item.price < item.marketPrice * 0.9)
+            priceClass = "good";
+
+        if(item.price > item.marketPrice * 1.1)
+            priceClass = "bad";
+
+        card.innerHTML = `
+
+            <div class="item-title">
+                ${getEmoji(item.category)} ${item.name}
+            </div>
+
+            <div class="description">
+                ${item.description}
+            </div>
+
+            <div class="price ${priceClass}">
+                ${formatMoney(item.price)}
+            </div>
+
+            <div class="market-price">
+                Рыночная цена: примерно
+                ${formatMoney(item.marketPrice)}
+            </div>
+
+            <div class="seller">
+                👤 ${item.seller}
+            </div>
+
+            <button class="btn gray"
+                onclick="openSellerChat(
+                    '${escapeJS(item.seller)}',
+                    ${item.id}
+                )">
+                💬 Написать продавцу
+            </button>
+
+            <button class="btn"
+                onclick="buyMarketItem(${item.id})">
+                💰 Купить за ${formatMoney(item.price)}
+            </button>
+        `;
+
+        list.appendChild(card);
+
+    });
 
 }
 
 
-function hideAll(){
+/* =========================================================
+   ПОКУПКА
+========================================================= */
 
- document.getElementById("shop").classList.add("hidden");
- document.getElementById("inventory").classList.add("hidden");
- document.getElementById("chatPage").classList.add("hidden");
- document.getElementById("chats").classList.add("hidden");
+function buyMarketItem(id) {
+
+    const item =
+        market.find(x => x.id === id);
+
+    if(!item)
+        return;
+
+    if(game.balance < item.price) {
+
+        alert(
+            "❌ Не хватает денег.\n\n" +
+            "Нужно: " +
+            formatMoney(item.price)
+        );
+
+        return;
+
+    }
+
+    const ok = confirm(
+        "Купить " +
+        item.name +
+        " за " +
+        formatMoney(item.price) +
+        "?"
+    );
+
+    if(!ok)
+        return;
+
+    game.balance -= item.price;
+
+    game.inventory.push({
+
+        id: Date.now(),
+
+        name: item.name,
+
+        category: item.category,
+
+        description: item.description,
+
+        buyPrice: item.price,
+
+        marketPrice: item.marketPrice
+
+    });
+
+    game.history.push({
+
+        type: "buy",
+
+        text:
+            "Куплен " +
+            item.name +
+            " за " +
+            formatMoney(item.price),
+
+        time: new Date().toLocaleString("ru-RU")
+
+    });
+
+    saveGame();
+
+    updateBalance();
+
+    renderInventory();
+
+    alert(
+        "✅ Покупка совершена!\n\n" +
+        item.name +
+        " теперь находится в твоих товарах."
+    );
 
 }
 
 
-function updateChats(){
+/* =========================================================
+   ИНВЕНТАРЬ
+========================================================= */
 
- const list=document.getElementById("chatList");
+function renderInventory() {
 
- list.innerHTML="";
+    const list =
+        document.getElementById("inventoryList");
 
- Object.keys(chats).forEach(seller=>{
+    list.innerHTML = "";
 
-  const div=document.createElement("div");
+    if(game.inventory.length === 0) {
 
-  div.className="item";
+        list.innerHTML =
+            '<div class="empty">' +
+            '📦 У тебя пока нет товаров.' +
+            '</div>';
 
-  div.innerHTML=`
-  👤 <b>${seller}</b>
-  <button class="btn chatbtn"
-  onclick="openChat('${seller}','','')">
-  Открыть чат
-  </button>
-  `;
+        return;
 
-  list.appendChild(div);
+    }
 
- });
+    game.inventory.forEach((item,index) => {
 
- if(Object.keys(chats).length===0){
+        const card =
+            document.createElement("div");
 
-  list.innerHTML="<div>Чатов пока нет.</div>";
+        card.className = "card";
 
- }
+        card.innerHTML = `
+
+            <div class="item-title">
+                ${getEmoji(item.category)}
+                ${item.name}
+            </div>
+
+            <div class="description">
+                ${item.description}
+            </div>
+
+            <div class="stat">
+                <span>Покупка</span>
+                <b>${formatMoney(item.buyPrice)}</b>
+            </div>
+
+            <div class="stat">
+                <span>Рынок</span>
+                <b>${formatMoney(item.marketPrice)}</b>
+            </div>
+
+            <button class="btn green"
+                onclick="openSellModal(${index})">
+                🏷️ Выставить на продажу
+            </button>
+
+        `;
+
+        list.appendChild(card);
+
+    });
+
+}
+
+
+/* =========================================================
+   ОКНО ПРОДАЖИ
+========================================================= */
+
+function openSellModal(index) {
+
+    sellingInventoryIndex = index;
+
+    const item =
+        game.inventory[index];
+
+    if(!item)
+        return;
+
+    document.getElementById("sellInfo").innerHTML = `
+
+        <div class="card">
+
+            <b>
+                ${getEmoji(item.category)}
+                ${item.name}
+            </b>
+
+            <div class="small">
+                Ты купил его за
+                ${formatMoney(item.buyPrice)}
+            </div>
+
+            <div class="small">
+                Рыночная цена:
+                ${formatMoney(item.marketPrice)}
+            </div>
+
+        </div>
+
+        <div class="small">
+            💡 Если поставить слишком высокую цену,
+            покупатели будут предлагать меньше или
+            вообще могут не написать.
+        </div>
+
+    `;
+
+    document.getElementById("sellPrice").value =
+        Math.round(item.marketPrice);
+
+    document
+        .getElementById("sellModal")
+        .classList.remove("hidden");
 
 }
 
 
-function filterCategory(category){
+function closeSellModal() {
 
- document.querySelectorAll(".listing")
- .forEach(item=>{
+    document
+        .getElementById("sellModal")
+        .classList.add("hidden");
 
-  item.style.display=
-   item.dataset.category===category
-   ?"block"
-   :"none";
-
- });
+    sellingInventoryIndex = null;
 
 }
 
 
-function searchItems(text){
+/* =========================================================
+   СОЗДАНИЕ ОБЪЯВЛЕНИЯ
+========================================================= */
 
- text=text.toLowerCase();
+function createListing() {
 
- document.querySelectorAll(".listing")
- .forEach(item=>{
+    const index =
+        sellingInventoryIndex;
 
-  const name=item.dataset.name.toLowerCase();
+    if(index === null)
+        return;
 
-  item.style.display=
-   name.includes(text)
-   ?"block"
-   :"none";
+    const item =
+        game.inventory[index];
 
- });
+    if(!item)
+        return;
+
+    const input =
+        document.getElementById("sellPrice");
+
+    const price =
+        Number(input.value);
+
+    if(!price || price <= 0) {
+
+        alert("Введите нормальную цену.");
+
+        return;
+
+    }
+
+    game.listings.push({
+
+        id: Date.now(),
+
+        name: item.name,
+
+        category: item.category,
+
+        description: item.description,
+
+        buyPrice: item.buyPrice,
+
+        marketPrice: item.marketPrice,
+
+        price: price,
+
+        createdAt: Date.now(),
+
+        buyer: null,
+
+        sold: false
+
+    });
+
+    game.inventory.splice(index,1);
+
+    game.history.push({
+
+        type: "listing",
+
+        text:
+            "Выставлен " +
+            item.name +
+            " за " +
+            formatMoney(price),
+
+        time: new Date().toLocaleString("ru-RU")
+
+    });
+
+    saveGame();
+
+    closeSellModal();
+
+    renderInventory();
+
+    renderMyListings();
+
+    alert(
+        "📢 Объявление опубликовано!\n\n" +
+        "Теперь товар НЕ продаётся автоматически.\n" +
+        "Покупатели должны сначала написать тебе."
+    );
+
+    showPage("myListingsPage");
 
 }
 
+
+/* =========================================================
+   МОИ ОБЪЯВЛЕНИЯ
+========================================================= */
+
+function renderMyListings() {
+
+    const list =
+        document.getElementById("myListingsList");
+
+    list.innerHTML = "";
+
+    if(game.listings.length === 0) {
+
+        list.innerHTML =
+            '<div class="empty">' +
+            '🏷️ Ты пока ничего не продаёшь.' +
+            '</div>';
+
+        return;
+
+    }
+
+    game.listings.forEach(item => {
+
+        const card =
+            document.createElement("div");
+
+        card.className = "card";
+
+        const difference =
+            item.price - item.marketPrice;
+
+        let status = "";
+
+        if(item.sold) {
+
+            status =
+                '<span class="badge">✅ Продано</span>';
+
+        } else if(difference > item.marketPrice * 0.2) {
+
+            status =
+                '<span class="badge">💸 Очень дорого</span>';
+
+        } else if(difference > item.marketPrice * 0.1) {
+
+            status =
+                '<span class="badge">⚠️ Дороговато</span>';
+
+        } else {
+
+            status =
+                '<span class="badge">🟢 Нормальная цена</span>';
+
+        }
+
+        card.innerHTML = `
+
+            <div class="item-title">
+                ${getEmoji(item.category)}
+                ${item.name}
+            </div>
+
+            <div class="price">
+                ${formatMoney(item.price)}
+            </div>
+
+            <div class="market-price">
+                Рыночная цена:
+                ${formatMoney(item.marketPrice)}
+            </div>
+
+            ${status}
+
+            ${
+                item.sold
+                ?
+                `<div class="seller">
+                    Покупатель: ${item.buyer}
+                </div>`
+                :
+                `<div class="small" style="margin-top:8px">
+                    Покупатели могут написать тебе.
+                </div>`
+            }
+
+        `;
+
+        list.appendChild(card);
+
+    });
+
+}
+
+
+/* =========================================================
+   ПОКУПАТЕЛИ
+========================================================= */
+
+const buyers = [
+
+    {
+        name: "Илья",
+        budget: 20000,
+        patience: 0.8
+    },
+
+    {
+        name: "Миша",
+        budget: 30000,
+        patience: 0.6
+    },
+
+    {
+        name: "Даня",
+        budget: 15000,
+        patience: 0.9
+    },
+
+    {
+        name: "Саша",
+        budget: 50000,
+        patience: 0.7
+    }
+
+];
+
+
+/*
+    Проверяем объявления.
+    В этой версии проверка происходит периодически.
+*/
+
+function checkForBuyers() {
+
+    game.listings.forEach(listing => {
+
+        if(listing.sold)
+            return;
+
+        /*
+            Если цена сильно выше рынка,
+            вероятность сообщения маленькая.
+        */
+
+        let chance = 0.5;
+
+        const ratio =
+            listing.price /
+            listing.marketPrice;
+
+        if(ratio <= 0.9)
+            chance = 0.9;
+
+        else if(ratio <= 1.05)
+            chance = 0.75;
+
+        else if(ratio <= 1.15)
+            chance = 0.5;
+
+        else if(ratio <= 1.3)
+            chance = 0.2;
+
+        else
+            chance = 0.05;
+
+        if(Math.random() > chance)
+            return;
+
+        const buyer =
+            buyers[
+                Math.floor(
+                    Math.random() *
+                    buyers.length
+                )
+            ];
+
+        if(listing.price > buyer.budget)
+            return;
+
+        createBuyerChat(
+            buyer,
+            listing
+        );
+
+    });
+
+}
+
+
+/* =========================================================
+   СОЗДАНИЕ ЧАТА ПОКУПАТЕЛЯ
+========================================================= */
+
+function createBuyerChat(buyer,listing) {
+
+    const chatId =
+        "buyer_" + listing.id;
+
+    if(game.chats[chatId])
+        return;
+
+    game.chats[chatId] = {
+
+        id: chatId,
+
+        person: buyer.name,
+
+        type: "buyer",
+
+        listingId: listing.id,
+
+        itemName: listing.name,
+
+        messages: [
+
+            {
+                me: false,
+
+                text:
+                    "Здравствуйте! " +
+                    "Товар ещё продаётся?"
+            }
+
+        ],
+
+        waiting: false
+
+    };
+
+    saveGame();
+
+    renderChats();
+
+}
+
+
+/* =========================================================
+   ОТКРЫТЬ ЧАТ С ПОКУПАТЕЛЕМ
+========================================================= */
+
+function openBuyerChat(chatId) {
+
+    currentChat = chatId;
+
+    const chat =
+        game.chats[chatId];
+
+    if(!chat)
+        return;
+
+    document.getElementById("chatName")
+        .textContent =
+        "💬 " + chat.person;
+
+    showPage("chatPage");
+
+    renderCurrentChat();
+
+}
+
+
+/* =========================================================
+   ЧАТ С ПРОДАВЦОМ
+========================================================= */
+
+function openSellerChat(seller,id) {
+
+    const chatId =
+        "seller_" + seller + "_" + id;
+
+    if(!game.chats[chatId]) {
+
+        const item =
+            market.find(x => x.id === id);
+
+        game.chats[chatId] = {
+
+            id: chatId,
+
+            person: seller,
+
+            type: "seller",
+
+            itemId: id,
+
+            itemName:
+                item ? item.name : "",
+
+            messages: [
+
+                {
+                    me: false,
+
+                    text:
+                        "Здравствуйте! " +
+                        "Интересует мой товар?"
+                }
+
+            ],
+
+            waiting: false
+
+        };
+
+        saveGame();
+
+    }
+
+    currentChat = chatId;
+
+    document.getElementById("chatName")
+        .textContent =
+        "💬 " + seller;
+
+    showPage("chatPage");
+
+    renderCurrentChat();
+
+}
+
+
+/* =========================================================
+   ОТОБРАЖЕНИЕ ЧАТА
+========================================================= */
+
+function renderCurrentChat() {
+
+    const chat =
+        game.chats[currentChat];
+
+    const box =
+        document.getElementById("messages");
+
+    box.innerHTML = "";
+
+    chat.messages.forEach(message => {
+
+        const div =
+            document.createElement("div");
+
+        div.className =
+            "message " +
+            (message.me ? "me" : "");
+
+        div.textContent =
+            message.text;
+
+        box.appendChild(div);
+
+    });
+
+    box.scrollTop =
+        box.scrollHeight;
+
+}
+
+
+/* =========================================================
+   ОТПРАВКА СООБЩЕНИЯ
+========================================================= */
+
+function sendMessage() {
+
+    const input =
+        document.getElementById("chatInput");
+
+    const text =
+        input.value.trim();
+
+    if(!text)
+        return;
+
+    const chat =
+        game.chats[currentChat];
+
+    if(!chat)
+        return;
+
+    chat.messages.push({
+
+        me: true,
+
+        text: text
+
+    });
+
+    input.value = "";
+
+    saveGame();
+
+    renderCurrentChat();
+
+    if(chat.type === "buyer")
+        buyerReply(chat);
+
+    else
+        sellerReply(chat);
+
+}
+
+
+/* =========================================================
+   ОТВЕТ ПОКУПАТЕЛЯ
+========================================================= */
+
+function buyerReply(chat) {
+
+    if(chat.waiting)
+        return;
+
+    chat.waiting = true;
+
+    document.getElementById("typing")
+        .textContent =
+        "Покупатель печатает...";
+
+    const listing =
+        game.listings.find(
+            x => x.id === chat.listingId
+        );
+
+    let delay =
+        5000 +
+        Math.floor(Math.random() * 7000);
+
+    setTimeout(() => {
+
+        chat.waiting = false;
+
+        document.getElementById("typing")
+            .textContent = "";
+
+        let text =
+            getBuyerReply(
+                chat,
+                listing
+            );
+
+        chat.messages.push({
+
+            me: false,
+
+            text: text
+
+        });
+
+        saveGame();
+
+        renderCurrentChat();
+
+    },delay);
+
+}
+
+
+/* =========================================================
+   ЛОГИКА ОТВЕТОВ ПОКУПАТЕЛЯ
+========================================================= */
+
+function getBuyerReply(chat,listing) {
+
+    const last =
+        chat.messages[
+            chat.messages.length - 2
+        ];
+
+    const text =
+        last
+        ? last.text.toLowerCase()
+        : "";
+
+    if(
+        text.includes("привет") ||
+        text.includes("здрав")
+    ) {
+
+        return (
+            "Привет! Да, я по поводу " +
+            chat.itemName +
+            "."
+        );
+
+    }
+
+    if(
+        text.includes("сколько") ||
+        text.includes("цена")
+    ) {
+
+        return (
+            "Увидел цену в объявлении. " +
+            "А немного уступить сможете?"
+        );
+
+    }
+
+    if(
+        text.includes("скид") ||
+        text.includes("уступ")
+    ) {
+
+        if(listing) {
+
+            const offer =
+                Math.round(
+                    listing.marketPrice * 0.95
+                );
+
+            return (
+                "Могу предложить " +
+                formatMoney(offer) +
+                "."
+            );
+
+        }
+
+        return "Немного могу уступить.";
+
+    }
+
+    if(
+        text.includes("заберу") ||
+        text.includes("беру")
+    ) {
+
+        if(listing) {
+
+            if(
+                listing.price <=
+                listing.marketPrice * 1.1
+            ) {
+
+                return (
+                    "Хорошо, цена меня устраивает. " +
+                    "Давайте оформим сделку."
+                );
+
+            }
+
+            return (
+                "За такую цену дороговато. " +
+                "Если снизите, я заберу."
+            );
+
+        }
+
+    }
+
+    if(
+        text.includes("дорого") ||
+        text.includes("дорог")
+    ) {
+
+        if(listing) {
+
+            return (
+                "Согласен, для меня дороговато. " +
+                "Могу дать " +
+                formatMoney(
+                    Math.round(
+                        listing.marketPrice * 0.9
+                    )
+                ) +
+                "."
+            );
+
+        }
+
+    }
+
+    return (
+        "Понял. А что можете предложить по цене?"
+    );
+
+}
+
+
+/* =========================================================
+   ОТВЕТ ПРОДАВЦА
+========================================================= */
+
+function sellerReply(chat) {
+
+    if(chat.waiting)
+        return;
+
+    chat.waiting = true;
+
+    document.getElementById("typing")
+        .textContent =
+        "Продавец печатает...";
+
+    const delay =
+        4000 +
+        Math.floor(Math.random() * 7000);
+
+    setTimeout(() => {
+
+        chat.waiting = false;
+
+        document.getElementById("typing")
+            .textContent = "";
+
+        const last =
+            chat.messages[
+                chat.messages.length - 2
+            ];
+
+        const text =
+            last
+            ? last.text.toLowerCase()
+            : "";
+
+        let reply;
+
+        if(
+            text.includes("привет") ||
+            text.includes("здрав")
+        ) {
+
+            reply =
+                "Привет! Что вас интересует?";
+
+        } else if(
+            text.includes("скид") ||
+            text.includes("уступ")
+        ) {
+
+            reply =
+                "Могу немного уступить, " +
+                "но сильно цену снижать не буду.";
+
+        } else if(
+            text.includes("дорого")
+        ) {
+
+            reply =
+                "Можешь предложить свою цену.";
+
+        } else if(
+            text.includes("заберу") ||
+            text.includes("беру")
+        ) {
+
+            reply =
+                "Хорошо, договорились.";
+
+        } else {
+
+            reply =
+                "Понял. А какую цену предлагаете?";
+
+        }
+
+        chat.messages.push({
+
+            me: false,
+
+            text: reply
+
+        });
+
+        saveGame();
+
+        renderCurrentChat();
+
+    },delay);
+
+}
+
+
+/* =========================================================
+   СПИСОК ЧАТОВ
+========================================================= */
+
+function renderChats() {
+
+    const list =
+        document.getElementById("chatsList");
+
+    list.innerHTML = "";
+
+    const chats =
+        Object.values(game.chats);
+
+    if(chats.length === 0) {
+
+        list.innerHTML =
+            '<div class="empty">' +
+            '💬 Пока никто не написал.' +
+            '</div>';
+
+        return;
+
+    }
+
+    chats.forEach(chat => {
+
+        const card =
+            document.createElement("div");
+
+        card.className = "card";
+
+        const last =
+            chat.messages[
+                chat.messages.length - 1
+            ];
+
+        card.innerHTML = `
+
+            <div class="item-title">
+                ${chat.type === "buyer" ? "👤" : "🏪"}
+                ${chat.person}
+            </div>
+
+            <div class="description">
+                ${chat.itemName}
+            </div>
+
+            <div class="small">
+                ${last ? last.text : ""}
+            </div>
+
+            <button class="btn"
+                onclick="openBuyerChat('${chat.id}')">
+                💬 Открыть
+            </button>
+
+        `;
+
+        list.appendChild(card);
+
+    });
+
+}
+
+
+/* =========================================================
+   ИСТОРИЯ
+========================================================= */
+
+function renderHistory() {
+
+    const list =
+        document.getElementById("historyList");
+
+    list.innerHTML = "";
+
+    if(game.history.length === 0) {
+
+        list.innerHTML =
+            '<div class="empty">' +
+            '📊 История пока пустая.' +
+            '</div>';
+
+        return;
+
+    }
+
+    [...game.history]
+        .reverse()
+        .forEach(item => {
+
+            const card =
+                document.createElement("div");
+
+            card.className = "card";
+
+            card.innerHTML = `
+
+                <div>${item.text}</div>
+
+                <div class="small">
+                    ${item.time}
+                </div>
+
+            `;
+
+            list.appendChild(card);
+
+        });
+
+}
+
+
+/* =========================================================
+   УТИЛИТЫ
+========================================================= */
+
+function formatMoney(value) {
+
+    return Number(value)
+        .toLocaleString("ru-RU") + " ₽";
+
+}
+
+
+function getEmoji(category) {
+
+    const emojis = {
+
+        "Телефоны": "📱",
+
+        "Машины": "🚗",
+
+        "Игрушки": "🧸",
+
+        "Техника": "💻",
+
+        "Другое": "📦"
+
+    };
+
+    return emojis[category] || "📦";
+
+}
+
+
+function escapeJS(text) {
+
+    return String(text)
+        .replace(/'/g,"\\'");
+
+}
+
+
+/* =========================================================
+   ЗАПУСК
+========================================================= */
 
 updateBalance();
+
+renderMarket();
+
+setInterval(() => {
+
+    checkForBuyers();
+
+    renderChats();
+
+    renderMyListings();
+
+},15000);
 
 </script>
 
