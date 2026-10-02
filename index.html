@@ -76,7 +76,7 @@
     padding:8px 6px calc(env(safe-area-inset-bottom,0px) + 8px); }
   .tabbar button { background:none; border:none; color:var(--muted);
     display:flex; flex-direction:column; align-items:center; gap:3px;
-    font-size:10px; font-weight:600; padding:4px 10px; cursor:pointer;
+    font-size:9px; font-weight:600; padding:4px 6px; cursor:pointer;
     font-family:inherit; }
   .tabbar button .ico { font-size:20px; }
   .tabbar button.active { color:var(--accent); }
@@ -139,7 +139,7 @@
     animation:slideUp .25s ease; }
   @keyframes slideUp { from{transform:translateY(30px);opacity:.6;} to{transform:none;opacity:1;} }
   .modal h3 { margin:0 0 6px; font-size:18px; }
-  .modal p { margin:0 0 16px; color:var(--muted); font-size:13px; }
+  .modal p { margin:0 0 16px; color:var(--muted); font-size:13px; line-height:1.5; }
   .modal input[type=number] { width:100%; background:var(--card);
     border:1px solid var(--line); border-radius:14px; padding:14px;
     color:var(--text); font-size:18px; font-weight:700; outline:none;
@@ -179,6 +179,12 @@
     border-top-color:var(--accent); border-radius:50%;
     animation:spin 1s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
+
+  .repair-buttons { display:flex; flex-direction:column; gap:6px; }
+  .repair-info { background:var(--card-2); border-radius:12px; padding:12px;
+    font-size:12px; color:var(--muted); line-height:1.5; margin-bottom:12px; }
+  .repair-tag { display:inline-block; font-size:11px; padding:3px 8px; border-radius:8px;
+    background:rgba(46,204,113,.15); color:var(--green); margin-right:4px; margin-top:4px; }
 </style>
 </head>
 <body>
@@ -201,6 +207,7 @@
     <div id="listings"></div>
   </section>
   <section class="tab" id="tab-inventory"><div id="inventory"></div></section>
+  <section class="tab" id="tab-repair"><div id="repair"></div></section>
   <section class="tab" id="tab-chats"><div id="chats"></div></section>
   <section class="tab" id="tab-history"><div id="history"></div></section>
   <section class="tab" id="tab-settings"><div class="card" id="settings"></div></section>
@@ -209,6 +216,7 @@
 <div class="tabbar">
   <button data-tab="market" class="active"><span class="ico">🏪</span>Рынок</button>
   <button data-tab="inventory"><span class="ico">📦</span>Товары</button>
+  <button data-tab="repair"><span class="ico">🔧</span>Ремонт</button>
   <button data-tab="chats"><span class="ico">💬</span>Чаты</button>
   <button data-tab="history"><span class="ico">📊</span>История</button>
   <button data-tab="settings"><span class="ico">⚙️</span>Ещё</button>
@@ -260,7 +268,6 @@ const CATEGORIES = [
   { id:'other',   label:'🔥 Другое' }
 ];
 
-/* ===== TEMPLATES ===== */
 const TEMPLATES = {
   phones: [
     { t:'iPhone 12 128GB',      d:'Б/у, аккумулятор 87%, комплект',      m:32000,  ask:.92, min:.78, i:'📱' },
@@ -306,7 +313,6 @@ const TEMPLATES = {
   ]
 };
 
-/* ===== NPC ARCHETYPES ===== */
 const SELLER_ARCHETYPES = {
   bargainer:{ label:'🤝 Торгаш',    minMul:.82, stepMul:[.015,.025,.035], maxOffers:6,
     phrases:['Так, давай поторгуемся!','Цена — это вопрос обсуждения.','Ну что, сколько дашь?'] },
@@ -335,6 +341,15 @@ const BUYER_ARCHETYPES = {
 
 const NPC_NAMES = ['Артём','Дмитрий','Сергей','Алексей','Иван','Максим','Олег','Никита','Роман','Павел',
                    'Анна','Мария','Ольга','Екатерина','Дарья','Наталья'];
+
+const REPAIR_TYPES = {
+  battery:    { label:'🔋 Замена аккумулятора', base: 5000 },
+  screen:     { label:'📺 Замена экрана',        base: 8000 },
+  body:       { label:'🚗 Кузовной ремонт',      base: 12000 },
+  engine:     { label:'⚙️ Ремонт двигателя',     base: 25000 },
+  cosmetics:  { label:'✨ Косметика',            base: 2000 },
+  diagnostics:{ label:'🔍 Диагностика',          base: 1500 }
+};
 
 /* ===== STATE ===== */
 let state = null;
@@ -382,9 +397,7 @@ function defaultState() {
   };
 }
 
-/* ===== SUPABASE LOAD/SAVE ===== */
 async function loadGame() {
-  // сначала локальный кэш (мгновенно)
   try {
     const cached = localStorage.getItem('perekup_cache_' + PLAYER_ID);
     if (cached) {
@@ -392,7 +405,6 @@ async function loadGame() {
       if (parsed && parsed.market) return parsed;
     }
   } catch(e) {}
-  // потом из Supabase
   try {
     const { data, error } = await sb.from('games').select('state').eq('tg_id', PLAYER_ID).maybeSingle();
     if (error) throw error;
@@ -454,6 +466,7 @@ function switchTab(tab) {
   $('#tab-' + tab).classList.add('active');
   if (tab === 'market')    renderMarket();
   if (tab === 'inventory') renderInventory();
+  if (tab === 'repair')    renderRepair();
   if (tab === 'chats')     renderChats();
   if (tab === 'history')   renderHistory();
   if (tab === 'settings')  renderSettings();
@@ -674,6 +687,18 @@ function sellerReply(chat, text, offerNum) {
   const arche = SELLER_ARCHETYPES[chat.archetype];
   const t = text.toLowerCase();
 
+  // Согласие игрока — обрабатывается РАНЬШЕ всего остального
+  const isAgree = /договорились|согласен|согласна|беру|берём|ок|окей|хорошо|давай|по рукам|годится|идет|идёт/i.test(t);
+  if (isAgree && (st.stage === 'negotiating' || st.stage === 'idle')) {
+    if (st.agreePrice) {
+      st.stage = 'agreed';
+      return { text: `Отлично, по рукам! ${fmt(st.agreePrice)}. Жми кнопку «Купить».`, meta: { agree: st.agreePrice } };
+    }
+    st.agreePrice = st.npcLastPrice;
+    st.stage = 'agreed';
+    return { text: `Хорошо, ${fmt(st.agreePrice)}. Жми кнопку «Купить».`, meta: { agree: st.agreePrice } };
+  }
+
   if (/привет|здравств|добрый|хай|hi|hello/.test(t) && !offerNum && st.stage === 'idle') {
     st.stage = 'negotiating';
     return { text: `${pick(arche.phrases)} Товар — «${listing.title}», цена ${fmt(listing.askPrice)}.` };
@@ -682,11 +707,6 @@ function sellerReply(chat, text, offerNum) {
   if (/прода|актуальн|есть|в наличии/.test(t) && !offerNum) {
     if (st.stage === 'idle') st.stage = 'negotiating';
     return { text: `Да, товар ещё есть. Цена ${fmt(st.npcLastPrice)}.` };
-  }
-
-  if (/договорились|согласен|беру|ок|хорошо|давай/.test(t) && st.stage === 'negotiating' && st.agreePrice) {
-    st.stage = 'agreed';
-    return { text: `Отлично, по рукам! ${fmt(st.agreePrice)}. Жми кнопку «Купить».`, meta: { agree: st.agreePrice } };
   }
 
   if (offerNum) {
@@ -748,6 +768,13 @@ function buyerReply(chat, text, offerNum) {
   const t = text.toLowerCase();
   const listedPrice = inv.listedPrice;
 
+  const isAgree = /договорились|согласен|согласна|продаю|продам|беру|берём|ок|окей|хорошо|давай|по рукам|годится/i.test(t);
+  if (isAgree && st.stage === 'buyer_negotiating' && st.buyerLastOffer) {
+    st.agreePrice = st.buyerLastOffer;
+    st.stage = 'buyer_agreed';
+    return { text: `Отлично, забираю за ${fmt(st.agreePrice)}!`, meta: { agree: st.agreePrice } };
+  }
+
   if (/да|есть|продаётся|актуальн/.test(t) && st.stage === 'buyer_waiting') {
     st.stage = 'buyer_negotiating';
     const first = Math.round(listedPrice * (0.85 + Math.random() * 0.1) / 100) * 100;
@@ -759,12 +786,6 @@ function buyerReply(chat, text, offerNum) {
   if (/нет|уже нет|продано/.test(t) && st.stage === 'buyer_waiting') {
     st.stage = 'buyer_done';
     return { text: 'Понял, извините за беспокойство.' };
-  }
-
-  if (/согласен|договорились|продаю|беру|ок|хорошо/.test(t) && st.stage === 'buyer_negotiating' && st.buyerLastOffer) {
-    st.agreePrice = st.buyerLastOffer;
-    st.stage = 'buyer_agreed';
-    return { text: `Отлично, забираю за ${fmt(st.agreePrice)}!`, meta: { agree: st.agreePrice } };
   }
 
   if (/мало|дорого|дешевле/.test(t) && st.stage === 'buyer_negotiating') {
@@ -828,6 +849,9 @@ function finalizeBuy() {
     marketPrice: listing.marketPrice,
     status: 'owned',
     listedPrice: null,
+    repairSpent: 0,
+    repairBoost: 0,
+    repairs: [],
     createdAt: Date.now()
   });
   state.deals.push({
@@ -853,7 +877,7 @@ function finalizeSell() {
   const price = chat.state.agreePrice;
   if (!inv || !price) return;
 
-  const profit = price - inv.buyPrice;
+  const profit = price - inv.buyPrice - (inv.repairSpent || 0);
   state.balance += price;
   inv.status = 'sold';
 
@@ -890,7 +914,7 @@ function renderInventory() {
         <div class="thumb">${it.image}</div>
         <div class="info">
           <div class="title">${escapeHtml(it.title)}</div>
-          <div class="desc">Куплено за ${fmt(it.buyPrice)}</div>
+          <div class="desc">Куплено за ${fmt(it.buyPrice)}${it.repairSpent ? ' · ремонт ' + fmt(it.repairSpent) : ''}</div>
           <div class="prices">
             <span class="price-ask">${it.listedPrice ? fmt(it.listedPrice) : '—'}</span>
             <span class="price-mkt">${fmt(it.marketPrice)}</span>
@@ -910,10 +934,12 @@ function openListModal(invId) {
   const inv = state.inventory.find(i => i.id === invId);
   if (!inv) return;
   const recommended = Math.round(inv.marketPrice * 1.05 / 100) * 100;
+  const maxReasonable = Math.round(inv.marketPrice * 2.5 / 100) * 100;
 
   $('#modalSheet').innerHTML = `
     <h3>Выставить «${escapeHtml(inv.title)}»</h3>
-    <p>Рыночная цена: <b>${fmt(inv.marketPrice)}</b>. Рекомендуем ~${fmt(recommended)}.</p>
+    <p>Рыночная цена: <b>${fmt(inv.marketPrice)}</b>. Рекомендуем ~${fmt(recommended)}.
+    <br><span style="color:var(--yellow);">Выше ${fmt(maxReasonable)} покупателей почти не будет.</span></p>
     <input id="listPrice" type="number" value="${recommended}" />
     <button class="btn" id="doList">✅ Выставить</button>
     <button class="btn ghost" id="cancelList" style="margin-top:8px;">Отмена</button>
@@ -924,6 +950,10 @@ function openListModal(invId) {
   $('#doList').addEventListener('click', () => {
     const v = parseInt($('#listPrice').value, 10);
     if (!v || v < 100) return toast('Укажите цену', 'err');
+    if (v > inv.marketPrice * 2.5) {
+      const ok = confirm(`Цена ${fmt(v)} сильно выше рынка (${fmt(inv.marketPrice)}).\nПокупатели почти не будут писать. Всё равно выставить?`);
+      if (!ok) return;
+    }
     inv.status = 'listed';
     inv.listedPrice = v;
     inv.listedAt = Date.now();
@@ -943,6 +973,9 @@ function scheduleBuyerForInventory(invId) {
   const inv = state.inventory.find(i => i.id === invId);
   if (!inv || inv.status !== 'listed') return;
 
+  // Не ищем покупателей, если цена абсурдно высокая
+  if (inv.listedPrice > inv.marketPrice * 2.5) return;
+
   const minSec = state.settings.testMode ? 5 : state.settings.buyerDelayMin * 60;
   const maxSec = state.settings.testMode ? 25 : state.settings.buyerDelayMax * 60;
   const delayMs = (minSec + Math.random() * (maxSec - minSec)) * 1000;
@@ -952,10 +985,18 @@ function scheduleBuyerForInventory(invId) {
     if (!fresh || fresh.status !== 'listed') return;
 
     const overprice = fresh.listedPrice / fresh.marketPrice;
-    let chance = 0.85;
-    if (overprice > 1.3) chance = 0.15;
-    else if (overprice > 1.15) chance = 0.4;
-    else if (overprice > 1.0) chance = 0.7;
+
+    // Реалистичная оценка: чем выше цена — тем меньше шансов
+    let chance;
+    if (overprice <= 0.8)       chance = 1.00;
+    else if (overprice <= 1.0)  chance = 0.90;
+    else if (overprice <= 1.15) chance = 0.65;
+    else if (overprice <= 1.30) chance = 0.35;
+    else if (overprice <= 1.50) chance = 0.12;
+    else if (overprice <= 2.00) chance = 0.04;
+    else                        chance = 0.00;
+
+    if (overprice > 2.5) return;
 
     if (Math.random() > chance) {
       scheduleBuyerForInventory(invId);
@@ -966,6 +1007,9 @@ function scheduleBuyerForInventory(invId) {
 }
 
 function createBuyerChat(inv) {
+  // Защита: не создаём покупателя, если цена выше рынка больше чем в 2.5 раза
+  if (inv.listedPrice > inv.marketPrice * 2.5) return;
+
   const archetypeKey = pick(Object.keys(BUYER_ARCHETYPES));
   const arche = BUYER_ARCHETYPES[archetypeKey];
   const name = pick(NPC_NAMES);
@@ -1072,6 +1116,100 @@ function renderHistory() {
   $('#history').innerHTML = head + list;
 }
 
+/* ===== REPAIR ===== */
+function repairCost(item, basePrice) {
+  const spent = item.repairSpent || 0;
+  let markup;
+  if (spent < 5000)       markup = 500;
+  else if (spent < 30000) markup = 1000;
+  else                    markup = 3000;
+
+  const steps = Math.floor(spent / markup);
+  return basePrice + steps * markup;
+}
+
+function renderRepair() {
+  const owned = state.inventory.filter(i => i.status !== 'sold');
+
+  if (!owned.length) {
+    $('#repair').innerHTML = `<div class="empty"><div class="big">🔧</div>Нечего ремонтировать.<br>Купите товар на рынке.</div>`;
+    return;
+  }
+
+  $('#repair').innerHTML = `
+    <div class="repair-info">
+      💡 Ремонт повышает рыночную цену товара на <b>40% от затрат</b>.
+      Чем больше вложено — тем дороже следующий ремонт:
+      до 5 000 ₽ → шаг 500 ₽ · 5–30к → 1 000 ₽ · после 30к → 3 000 ₽.
+    </div>
+  ` + owned.map(it => {
+    const spent = it.repairSpent || 0;
+    const boost = it.repairBoost || 0;
+    const itemRepairs = it.repairs || [];
+
+    const repairButtons = Object.entries(REPAIR_TYPES).map(([key, def]) => {
+      const cost = repairCost(it, def.base);
+      const canAfford = state.balance >= cost;
+      return `<button class="btn sm ${canAfford ? '' : 'ghost'}"
+        data-repair="${key}" data-item="${it.id}" ${canAfford ? '' : 'disabled'}>
+        ${def.label} — ${fmt(cost)}
+      </button>`;
+    }).join('');
+
+    const historyHtml = itemRepairs.length
+      ? `<div style="margin-top:8px;">${itemRepairs.map(r =>
+          `<span class="repair-tag">${REPAIR_TYPES[r].label}</span>`).join('')}</div>`
+      : '';
+
+    return `
+      <div class="card">
+        <div class="listing" style="margin-bottom:12px;">
+          <div class="thumb">${it.image}</div>
+          <div class="info">
+            <div class="title">${escapeHtml(it.title)}</div>
+            <div class="desc">Куплено за ${fmt(it.buyPrice)}</div>
+            <div class="prices">
+              <span class="price-ask">${fmt(it.marketPrice)}</span>
+              ${boost > 0 ? `<span style="color:var(--green);font-size:12px;">+${fmt(boost)}</span>` : ''}
+            </div>
+            <div class="seller">
+              💸 Вложено: ${fmt(spent)}${boost > 0 ? ` · 📈 Прибавка: +${fmt(boost)}` : ''}
+            </div>
+            ${historyHtml}
+          </div>
+        </div>
+        <div class="repair-buttons">${repairButtons}</div>
+      </div>`;
+  }).join('');
+
+  $$('[data-repair]').forEach(b => b.addEventListener('click', () => {
+    doRepair(b.dataset.item, b.dataset.repair);
+  }));
+}
+
+function doRepair(itemId, repairKey) {
+  const inv = state.inventory.find(i => i.id === itemId);
+  if (!inv) return;
+  const def = REPAIR_TYPES[repairKey];
+  if (!def) return;
+
+  const cost = repairCost(inv, def.base);
+  if (state.balance < cost) return toast('Недостаточно средств', 'err');
+
+  state.balance -= cost;
+  const boost = Math.round(cost * 1.4);
+  inv.repairBoost = (inv.repairBoost || 0) + boost;
+  inv.marketPrice += boost;
+  inv.repairSpent = (inv.repairSpent || 0) + cost;
+  inv.repairs = inv.repairs || [];
+  inv.repairs.push(repairKey);
+
+  saveGame();
+  renderBalance();
+  renderRepair();
+  toast(`${def.label} готово! +${fmt(boost)} к цене`, 'ok');
+}
+
 /* ===== SETTINGS ===== */
 function renderSettings() {
   const s = state.settings;
@@ -1079,6 +1217,7 @@ function renderSettings() {
     <div class="set-row"><span class="k">Игрок</span><span>${PLAYER_ID}</span></div>
     <div class="set-row"><span class="k">Баланс</span><span><b>${fmt(state.balance)}</b></span></div>
     <div class="set-row"><span class="k">Сделок всего</span><span>${state.deals.length}</span></div>
+    <div class="set-row"><span class="k">Товаров в инвентаре</span><span>${state.inventory.filter(i => i.status !== 'sold').length}</span></div>
     <div class="set-row"><span class="k">Тестовый режим (быстрые покупатели)</span>
       <button class="btn sm ghost" id="toggleTest" style="width:auto;">${s.testMode ? 'ВКЛ' : 'ВЫКЛ'}</button>
     </div>
@@ -1100,7 +1239,7 @@ function renderSettings() {
   });
 }
 
-/* ===== INIT BINDINGS ===== */
+/* ===== BIND ===== */
 function bindEvents() {
   $$('.tabbar button').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
@@ -1122,10 +1261,11 @@ function bindEvents() {
   $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
 }
 
-/* ===== BACKGROUND BUYERS LOOP ===== */
+/* ===== LOOP ===== */
 function startBuyerLoop() {
   setInterval(() => {
     state.inventory.filter(i => i.status === 'listed').forEach(inv => {
+      if (inv.listedPrice > inv.marketPrice * 2.5) return;
       const hasChat = state.chats.some(c => c.kind === 'buyer' && c.refId === inv.id
         && !['buyer_done', 'buyer_completed'].includes(c.state.stage));
       if (!hasChat && Math.random() < 0.15) createBuyerChat(inv);
@@ -1152,7 +1292,7 @@ function initTelegram() {
   bindEvents();
 
   state = await loadGame();
-  saveGame(); // на случай если создали новый state — сохраним
+  saveGame();
 
   $('#loading').classList.add('hide');
   renderBalance();
