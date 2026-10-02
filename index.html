@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Перекуп Симулятор</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#0e0f13;--bg-2:#16181f;--card:#1c1f28;--card-2:#232733;--line:#2a2f3a;--text:#eef1f6;--muted:#8b93a7;--accent:#4f8cff;--green:#2ecc71;--red:#ff5c6c;--yellow:#ffce4a;--radius:16px;--radius-sm:12px;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;overscroll-behavior:none;}
+body{display:flex;flex-direction:column;}
+.topbar{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#14161d 0%,#14161dee 100%);backdrop-filter:blur(10px);padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 12px;border-bottom:1px solid var(--line);}
+.topbar-row{display:flex;align-items:center;justify-content:space-between;}
+.brand{font-size:13px;font-weight:700;letter-spacing:.3px;color:var(--muted);}
+.brand span{color:var(--accent);}
+.balance{display:flex;align-items:center;gap:8px;background:var(--card);padding:10px 14px;border-radius:14px;border:1px solid var(--line);font-size:18px;font-weight:800;letter-spacing:.3px;}
+main{flex:1;overflow-y:auto;padding:12px 14px 96px;-webkit-overflow-scrolling:touch;}
+.tab{display:none;animation:fade .25s ease;}
+.tab.active{display:block;}
+@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.cats{display:flex;gap:8px;overflow-x:auto;padding:6px 0 12px;scrollbar-width:none;}
+.cats::-webkit-scrollbar{display:none;}
+.cat{flex:0 0 auto;padding:9px 14px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap;cursor:pointer;}
+.cat.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--line);padding:14px;margin-bottom:12px;animation:fade .3s ease;}
+.card.warn{background:rgba(255,206,74,.1);border-color:var(--yellow);}
+.listing{display:flex;gap:12px;}
+.thumb{width:74px;height:74px;flex:0 0 74px;border-radius:var(--radius-sm);background:var(--card-2);display:flex;align-items:center;justify-content:center;font-size:34px;border:1px solid var(--line);}
+.listing .info{flex:1;min-width:0;}
+.listing .title{font-size:15px;font-weight:700;margin-bottom:3px;}
+.listing .desc{font-size:12px;color:var(--muted);margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.prices{display:flex;gap:10px;font-size:13px;margin-bottom:8px;}
+.price-ask{font-weight:800;color:var(--yellow);}
+.price-mkt{color:var(--muted);text-decoration:line-through;}
+.seller{font-size:12px;color:var(--muted);margin-bottom:10px;}
+.btn{display:block;width:100%;border:none;cursor:pointer;padding:13px 16px;border-radius:14px;font-size:15px;font-weight:700;color:#fff;background:var(--accent);transition:.15s;font-family:inherit;}
+.btn:active{transform:scale(.98);opacity:.9;}
+.btn.ghost{background:var(--card-2);color:var(--text);border:1px solid var(--line);}
+.btn.green{background:var(--green);}
+.btn.red{background:var(--red);}
+.btn.yellow{background:var(--yellow);color:#000;}
+.btn.sm{padding:10px 12px;font-size:13px;border-radius:12px;}
+.btn[disabled]{opacity:.5;pointer-events:none;}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;justify-content:space-around;background:#14161df2;backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:8px 4px calc(env(safe-area-inset-bottom,0px) + 8px);}
+.tabbar button{background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:8px;font-weight:600;padding:4px 2px;cursor:pointer;font-family:inherit;position:relative;flex:1;}
+.tabbar button .ico{font-size:17px;}
+.tabbar button.active{color:var(--accent);}
+.tabbar .dot{position:absolute;top:2px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--red);}
+.empty{text-align:center;color:var(--muted);padding:60px 20px;font-size:14px;}
+.empty .big{font-size:42px;margin-bottom:10px;}
+.chat-row{display:flex;align-items:center;gap:12px;padding:12px;cursor:pointer;}
+.chat-avatar{width:46px;height:46px;flex:0 0 46px;border-radius:50%;background:var(--card-2);display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid var(--line);position:relative;}
+.chat-avatar.online::after{content:'';position:absolute;bottom:0;right:0;width:12px;height:12px;border-radius:50%;background:var(--green);border:2px solid var(--card);}
+.chat-meta{flex:1;min-width:0;}
+.chat-meta .name{font-size:14px;font-weight:700;}
+.chat-meta .last{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;background:var(--card-2);color:var(--muted);}
+.badge.hot{background:rgba(255,92,108,.15);color:var(--red);}
+.badge.new{background:rgba(79,140,255,.15);color:var(--accent);}
+.badge.online{background:rgba(46,204,113,.15);color:var(--green);}
+.chatview{position:fixed;inset:0;z-index:100;background:var(--bg);display:none;flex-direction:column;}
+.chatview.open{display:flex;}
+.chatview header{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 12px;border-bottom:1px solid var(--line);background:var(--bg-2);}
+.chatview header .back{background:none;border:none;color:var(--accent);font-size:22px;cursor:pointer;padding:4px 6px;font-family:inherit;}
+.chatview header .who{flex:1;min-width:0;}
+.chatview header .who .n{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chatview header .who .s{font-size:11px;color:var(--muted);}
+.msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;}
+.msg{max-width:78%;padding:10px 13px;border-radius:16px;font-size:14px;line-height:1.35;word-wrap:break-word;animation:fade .2s ease;}
+.msg.npc{background:var(--card);border-bottom-left-radius:4px;align-self:flex-start;}
+.msg.player{background:var(--accent);color:#fff;border-bottom-right-radius:4px;align-self:flex-end;}
+.msg.other{background:var(--card-2);border-bottom-left-radius:4px;align-self:flex-start;}
+.msg.system{background:transparent;color:var(--muted);font-size:12px;align-self:center;text-align:center;}
+.msg-name{font-size:10px;color:var(--muted);margin-bottom:3px;font-weight:600;}
+.quick{display:flex;gap:6px;overflow-x:auto;padding:8px 12px;border-top:1px solid var(--line);background:var(--bg-2);}
+.quick:empty{display:none;}
+.quick button{flex:0 0 auto;padding:8px 12px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
+.quick button.green{background:rgba(46,204,113,.15);border-color:var(--green);color:var(--green);}
+.quick button.red{background:rgba(255,92,108,.15);border-color:var(--red);color:var(--red);}
+.inputbar{display:flex;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom,0px) + 10px);background:var(--bg-2);border-top:1px solid var(--line);}
+.inputbar input{flex:1;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:11px 16px;color:var(--text);font-size:14px;outline:none;font-family:inherit;}
+.inputbar button{background:var(--accent);color:#fff;border:none;width:44px;height:44px;border-radius:50%;font-size:18px;cursor:pointer;}
+.modal{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;align-items:flex-end;}
+.modal.open{display:flex;}
+.modal .sheet{background:var(--bg-2);width:100%;border-radius:24px 24px 0 0;padding:22px 18px calc(env(safe-area-inset-bottom,0px) + 22px);animation:slideUp .25s ease;max-height:85vh;overflow-y:auto;}
+@keyframes slideUp{from{transform:translateY(30px);opacity:.6;}to{transform:none;opacity:1;}}
+.modal h3{margin:0 0 6px;font-size:18px;}
+.modal p{margin:0 0 16px;color:var(--muted);font-size:13px;line-height:1.5;}
+.modal input,.modal textarea{width:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;color:var(--text);font-size:16px;font-weight:600;outline:none;margin-bottom:14px;font-family:inherit;}
+.cost-info{background:var(--card-2);border-radius:12px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px;}
+.cost-info b{color:var(--text);}
+.deal{display:flex;justify-content:space-between;align-items:center;padding:12px;}
+.deal .l{flex:1;}
+.deal .l .t{font-size:14px;font-weight:600;}
+.deal .l .d{font-size:11px;color:var(--muted);margin-top:2px;}
+.deal .r{text-align:right;}
+.deal .r .p{font-size:15px;font-weight:800;}
+.deal .r .pl{font-size:12px;font-weight:700;}
+.profit{color:var(--green);}
+.loss{color:var(--red);}
+.set-row{display:flex;justify-content:space-between;align-items:center;padding:14px 4px;border-bottom:1px solid var(--line);font-size:14px;}
+.set-row:last-child{border-bottom:none;}
+.set-row .k{color:var(--muted);}
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translateX(-50%) translateY(-20px);background:var(--card);color:var(--text);padding:12px 18px;border-radius:14px;font-size:13px;font-weight:600;border:1px solid var(--line);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:300;opacity:0;pointer-events:none;transition:.25s;max-width:90vw;text-align:center;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{border-color:var(--green);}
+.toast.err{border-color:var(--red);}
+.toast.warn{border-color:var(--yellow);}
+.loading{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.loading.hide{display:none;}
+.spinner{width:40px;height:40px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.repair-info{background:var(--card-2);border-radius:12px;padding:12px;font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:12px;}
+.repair-tag{display:inline-block;font-size:11px;padding:3px 8px;border-radius:8px;background:rgba(46,204,113,.15);color:var(--green);margin-right:4px;margin-top:4px;}
+.repair-buttons{display:flex;flex-direction:column;gap:6px;}
+label.lbl{font-size:12px;color:var(--muted);display:block;margin-bottom:6px;}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div style="color:var(--muted);font-size:13px;">Загрузка...</div>
+</div>
+
+<div class="topbar">
+  <div class="topbar-row">
+    <div class="brand">ПЕРЕКУП <span>СИМУЛЯТОР</span></div>
+    <div class="balance"><span>💰</span><span id="balance">20 000 ₽</span></div>
+  </div>
+</div>
+
+<main>
+  <section class="tab active" id="tab-market">
+    <div class="cats" id="cats"></div>
+    <div id="listings"></div>
+  </section>
+  <section class="tab" id="tab-online"><div id="onlineListings"></div></section>
+  <section class="tab" id="tab-inventory"><div id="inventory"></div></section>
+  <section class="tab" id="tab-repair"><div id="repair"></div></section>
+  <section class="tab" id="tab-chats"><div id="chats"></div></section>
+  <section class="tab" id="tab-history"><div id="history"></div></section>
+  <section class="tab" id="tab-settings"><div class="card" id="settings"></div></section>
+</main>
+
+<div class="tabbar">
+  <button data-tab="market" class="active"><span class="ico">🏪</span>Рынок</button>
+  <button data-tab="online"><span class="ico">👥</span>Онлайн</button>
+  <button data-tab="inventory"><span class="ico">📦</span>Товары</button>
+  <button data-tab="repair"><span class="ico">🔧</span>Ремонт</button>
+  <button data-tab="chats"><span class="ico">💬</span>Чаты<span class="dot" id="chatsDot" style="display:none;"></span></button>
+  <button data-tab="history"><span class="ico">📊</span>История</button>
+  <button data-tab="settings"><span class="ico">⚙️</span>Ещё</button>
+</div>
+
+<div class="chatview" id="chatview">
+  <header>
+    <button class="back" id="chatBack">‹</button>
+    <div class="who">
+      <div class="n" id="chatName">—</div>
+      <div class="s" id="chatSub">—</div>
+    </div>
+  </header>
+  <div class="msgs" id="chatMsgs"></div>
+  <div class="quick" id="chatQuick"></div>
+  <div class="inputbar">
+    <input id="chatInput" placeholder="Написать сообщение..." autocomplete="off" />
+    <button id="chatSend">➤</button>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="sheet" id="modalSheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== SUPABASE ===== */
+const SUPABASE_URL = 'https://enfcdukkodrxiwozqmit.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ohSgb-xAeCwnpr9czlCOtw_KQ6ZaNEz';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const ADMIN_ID = '6730857939';
+
+const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+const PLAYER_ID = String(tgUser?.id || (localStorage.getItem('dev_id') || (() => {
+  const id = 'dev_' + Math.floor(Math.random() * 1e9);
+  localStorage.setItem('dev_id', id);
+  return id;
+})()));
+const PLAYER_NAME = tgUser?.username || tgUser?.first_name || ('Игрок' + PLAYER_ID.slice(-4));
+
+/* ===== CATEGORIES ===== */
+const CATEGORIES = [
+  { id:'all',     label:'🔥 Всё' },
+  { id:'phones',  label:'📱 Телефоны' },
+  { id:'cars',    label:'🚗 Авто' },
+  { id:'games',   label:'🎮 Игры' },
+  { id:'toys',    label:'🧸 Игрушки' },
+  { id:'tech',    label:'💻 Техника' },
+  { id:'clothes', label:'👕 Одежда' },
+  { id:'other',   label:'🔥 Другое' }
+];
+
+const TEMPLATES = {
+  phones: [
+    { t:'iPhone 12 128GB',      d:'Б/у, аккумулятор 87%, комплект',      m:32000,  ask:.92, min:.78, i:'📱' },
+    { t:'Samsung Galaxy S21',   d:'Хорошее состояние, чехол в подарок',  m:27000,  ask:.90, min:.75, i:'📱' },
+    { t:'Xiaomi Redmi Note 11', d:'Как новый, использовался 2 месяца',   m:13000,  ask:.90, min:.70, i:'📱' },
+    { t:'iPhone 15 Pro 256GB',  d:'Новый, запечатан, гарантия',          m:95000,  ask:.97, min:.90, i:'📱' },
+    { t:'Google Pixel 7',       d:'Отличное состояние',                  m:38000,  ask:.92, min:.80, i:'📱' }
+  ],
+  cars: [
+    { t:'Lada Granta 2018',     d:'1 владелец, 80к пробег, не бита',     m:420000, ask:.95, min:.82, i:'🚗' },
+    { t:'Kia Rio 2016',         d:'Обслужена, вся история у официала',   m:720000, ask:.96, min:.88, i:'🚗' },
+    { t:'Toyota Camry 2014',    d:'2.5, кожа, состояние хорошее',        m:1350000,ask:.96, min:.90, i:'🚗' },
+    { t:'Hyundai Solaris 2019', d:'Пробег 55к, один хозяин',             m:890000, ask:.95, min:.85, i:'🚗' }
+  ],
+  games: [
+    { t:'PS5 Slim Digital',     d:'Новая, гарантия, чек',                m:62000,  ask:.96, min:.88, i:'🎮' },
+    { t:'Xbox Series X',        d:'Б/у, всё работает',                   m:48000,  ask:.92, min:.80, i:'🎮' },
+    { t:'Nintendo Switch OLED', d:'Комплект, 3 игры в подарок',          m:31000,  ask:.93, min:.80, i:'🎮' },
+    { t:'Steam Deck 512GB',     d:'Почти новый, всё в комплекте',        m:55000,  ask:.94, min:.82, i:'🎮' }
+  ],
+  toys: [
+    { t:'LEGO Technic 42115',   d:'Полный комплект, собран 1 раз',       m:28000,  ask:.93, min:.80, i:'🧸' },
+    { t:'Коллекция Hot Wheels', d:'40 машинок, редкие модели',           m:9000,   ask:.90, min:.70, i:'🧸' },
+    { t:'Barbie Dreamhouse',    d:'Новый в коробке',                     m:15000,  ask:.92, min:.75, i:'🧸' },
+    { t:'Дрон DJI Mini 2',      d:'Налёт 3 часа, всё в комплекте',       m:42000,  ask:.94, min:.82, i:'🧸' }
+  ],
+  tech: [
+    { t:'MacBook Air M1',       d:'8/256, батарея 94%',                  m:68000,  ask:.94, min:.82, i:'💻' },
+    { t:'iPad Pro 11 2022',     d:'128GB, Wi-Fi, идеал',                 m:62000,  ask:.93, min:.80, i:'💻' },
+    { t:'Sony WH-1000XM5',      d:'Наушники, чехол в комплекте',         m:34000,  ask:.92, min:.78, i:'💻' },
+    { t:'Монитор LG 27 4K',     d:'Идеальное состояние, чек',            m:42000,  ask:.93, min:.80, i:'💻' }
+  ],
+  clothes: [
+    { t:'Кроссовки Nike Air',   d:'42 размер, носил пару раз',           m:14000,  ask:.90, min:.70, i:'👕' },
+    { t:'Куртка The North Face',d:'Мужская, размер L, оригинал',         m:32000,  ask:.93, min:.78, i:'👕' },
+    { t:'Сумка Louis Vuitton',  d:'Оригинал, с документами',             m:120000, ask:.97, min:.90, i:'👕' },
+    { t:'Худи Stone Island',    d:'Размер M, чёрное',                    m:38000,  ask:.92, min:.78, i:'👕' }
+  ],
+  other: [
+    { t:'Гитара Fender',        d:'Акустика, в чехле',                   m:35000,  ask:.92, min:.78, i:'🔥' },
+    { t:'Электросамокат Xiaomi',d:'Пробег 200 км',                       m:38000,  ask:.93, min:.80, i:'🔥' },
+    { t:'Сноуборд Burton',      d:'155 см, крепления в комплекте',       m:45000,  ask:.94, min:.80, i:'🔥' }
+  ]
+};
+
+const SELLER_ARCHETYPES = {
+  bargainer:{ label:'🤝 Торгаш',    minMul:.82, stepMul:[.015,.025,.035], maxOffers:6,
+    phrases:['Так, давай поторгуемся!','Цена — это вопрос обсуждения.','Ну что, сколько дашь?'] },
+  calm:     { label:'😌 Спокойный', minMul:.85, stepMul:[.02,.03,.02],    maxOffers:5,
+    phrases:['Привет. Товар есть, слушаю.','Спокойно, без спешки.'] },
+  greedy:   { label:'💰 Жадный',    minMul:.95, stepMul:[.005,.008],      maxOffers:4,
+    phrases:['Цена окончательная, почти.','Мне не срочно продавать.'] },
+  urgent:   { label:'⚡ Срочный',   minMul:.65, stepMul:[.04,.05,.06],    maxOffers:4,
+    phrases:['Нужно продать сегодня!','Срочно, поэтому уступлю.'] },
+  stubborn: { label:'🧱 Упрямый',   minMul:.9,  stepMul:[.01],            maxOffers:3,
+    phrases:['Я своё слово сказал.','Или берёшь, или нет.'] }
+};
+
+const BUYER_ARCHETYPES = {
+  hardbargain:{ label:'🤝 Торгуется',       maxMul:1.02, stepMul:[.02,.03,.04], maxOffers:6,
+    greeting:['Здравствуйте! Товар ещё продаётся?','Приветствую. По объявлению.'] },
+  generous:   { label:'💸 Переплатит',      maxMul:1.08, stepMul:[.03,.04],    maxOffers:3,
+    greeting:['Добрый день! Очень заинтересован.','Здравствуйте! Хочу забрать.'] },
+  inrush:     { label:'⏱ Торопится',       maxMul:1.04, stepMul:[.05],        maxOffers:2,
+    greeting:['Здравствуйте! Срочно нужно, беру!','Есть в наличии? Забираю сейчас.'] },
+  careful:    { label:'🔍 Осторожный',      maxMul:.97,  stepMul:[.02],        maxOffers:5,
+    greeting:['Здравствуйте, товар ещё актуален?','Добрый день. Можно уточнить?'] },
+  budget:     { label:'💼 Бюджет ограничен',maxMul:.9,   stepMul:[.03,.05],    maxOffers:4,
+    greeting:['Привет! Товар продаётся?','Здравствуйте! Интересует цена.'] }
+};
+
+const NPC_NAMES = ['Артём','Дмитрий','Сергей','Алексей','Иван','Максим','Олег','Никита','Роман','Павел',
+                   'Анна','Мария','Ольга','Екатерина','Дарья','Наталья'];
+
+/* ===== REPAIR ===== */
+const REPAIR_TYPES = {
+  diagnostics:{ label:'🔍 Диагностика', cost:1500, boost:2000 },
+  battery:    { label:'🔋 Аккумулятор', cost:5000, boost:10000 },
+  screen:     { label:'📺 Экран',       cost:8000, boost:10000 },
+  case_phone: { label:'📱 Корпус',      cost:4000, boost:10000 },
+  camera:     { label:'📷 Камера',      cost:6000, boost:10000 },
+  speaker:    { label:'🔊 Динамик',     cost:2500, boost:5000  },
+  battery_l:  { label:'🔋 Батарея',     cost:6000, boost:10000 },
+  keyboard:   { label:'⌨️ Клавиатура', cost:7000, boost:10000 },
+  cleaning:   { label:'🧼 Чистка',      cost:2000, boost:5000  },
+  cooler:     { label:'❄️ Кулер',       cost:5000, boost:10000 },
+  hdmi:       { label:'🔌 HDMI',        cost:4500, boost:10000 },
+  joystick:   { label:'🕹 Джойстик',    cost:3000, boost:5000  },
+  case_console:{ label:'🎮 Корпус',     cost:3500, boost:5000  },
+  engine:     { label:'⚙️ Двигатель',   cost:40000, boost:30000 },
+  body:       { label:'🚗 Кузов',       cost:25000, boost:20000 },
+  suspension: { label:'🔩 Подвеска',    cost:15000, boost:15000 },
+  interior:   { label:'🪑 Салон',       cost:10000, boost:10000 },
+  tires:      { label:'🛞 Шины',        cost:12000, boost:10000 },
+  to:         { label:'🔧 ТО',          cost:8000, boost:10000 },
+  dryclean:   { label:'👔 Химчистка',   cost:1500, boost:3000  },
+  sew:        { label:'🧵 Подшить',     cost:1000, boost:2000  },
+  zipper:     { label:'🤐 Молния',      cost:1200, boost:3000  },
+  stain:      { label:'💧 Пятно',       cost:800,  boost:2000  },
+  mechanism:  { label:'⚙️ Механизм',    cost:2500, boost:5000  },
+  paint:      { label:'🎨 Покраска',    cost:1500, boost:3000  },
+  case_toy:   { label:'📦 Корпус',      cost:2000, boost:4000  },
+  cosmetics:  { label:'✨ Косметика',   cost:2000, boost:3000  },
+  setup:      { label:'🛠 Настройка',   cost:3000, boost:5000  }
+};
+
+const REPAIR_BY_CATEGORY = {
+  phones:  ['battery','screen','case_phone','camera','speaker','diagnostics'],
+  tech:    ['battery_l','screen','keyboard','cleaning','diagnostics'],
+  games:   ['cooler','hdmi','joystick','case_console','diagnostics'],
+  cars:    ['engine','body','suspension','interior','tires','to'],
+  clothes: ['dryclean','sew','zipper','stain'],
+  toys:    ['mechanism','paint','case_toy','diagnostics'],
+  other:   ['cosmetics','cleaning','setup','diagnostics']
+};
+
+/* ===== PROFANITY ===== */
+const BAD_ROOTS = [
+  'хуй','хуя','хую','хуе','хуи','хуё','хуйн','пизд','пизж','пзд','бляд','блят','бля','блядь',
+  'ебал','ебан','ебуч','ебет','ебёт','ебу','еби','еба','ёб','ебн','сук','сучк','сучар',
+  'муд','муда','муди','гандон','гандо','ганду','долбо','долб','залуп','манда','мандав',
+  'шлюх','шлюш','пидор','пидар','пидр','педр','педик','наху','ниху','поху','охуе','охуен',
+  'охуи','впизд','впизду','отпизд','отху','приху','прихуе','тылох','пшол','пшел','пошелнах',
+  'пошёлнах','сосо','соси','соса','сосу','уеб','уёб','уебан','уебищ','хер','херн','херов',
+  'жоп','очко','очк','срак','перд','говн'
+];
+
+function normalizeText(text) {
+  return String(text).toLowerCase()
+    .replace(/[^а-яёa-z]/gi, '')
+    .replace(/(.)\1{2,}/g, '$1$1')
+    .replace(/[aeopxyckbhm]/g, ch => ({
+      'a':'а','e':'е','o':'о','p':'р','x':'х','y':'у','c':'с','k':'к',
+      'b':'в','h':'н','m':'м','t':'т','n':'п'
+    }[ch] || ch));
+}
+
+function containsProfanity(text) {
+  const normalized = normalizeText(text);
+  const words = String(text).toLowerCase().split(/\s+/).map(w => normalizeText(w));
+  for (const root of BAD_ROOTS) {
+    const r = normalizeText(root);
+    if (!r) continue;
+    if (normalized.includes(r)) return true;
+    for (const w of words) {
+      if (w.includes(r) || (r.includes(w) && w.length >= 3)) return true;
+    }
+  }
+  return false;
+}
+
+/* ===== STATE ===== */
+let state = null;
+let activeCategory = 'all';
+let currentChatId = null;
+let currentChatKind = 'npc';
+let saveTimeout = null;
+let realtimeChannels = [];
+let unreadChats = 0;
+
+function uid() { return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function fmt(n) { return Math.round(n).toLocaleString('ru-RU') + ' ₽'; }
+const $  = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function toast(text, kind = '') {
+  const el = $('#toast');
+  el.textContent = text;
+  el.className = 'toast show ' + kind;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = 'toast ' + kind, 2500);
+}
+
+function parseNumber(text) {
+  const m = String(text).replace(/\s/g, '').match(/\d{3,}/);
+  return m ? parseInt(m[0], 10) : null;
+}
+
+function generateMarket() {
+  const list = [];
+  Object.entries(TEMPLATES).forEach(([cat, items]) => {
+    items.forEach(tpl => {
+      const archKey = pick(Object.keys(SELLER_ARCHETYPES));
+      const arch = SELLER_ARCHETYPES[archKey];
+      list.push({
+        id: uid(), category: cat, title: tpl.t, desc: tpl.d, image: tpl.i,
+        sellerName: pick(NPC_NAMES), archetype: archKey,
+        askPrice: Math.round(tpl.m * tpl.ask / 100) * 100,
+        marketPrice: tpl.m,
+        minPrice: Math.round(tpl.m * Math.max(tpl.min, arch.minMul) / 100) * 100,
+        isActive: true, createdAt: Date.now()
+      });
+    });
+  });
+  return list.sort(() => Math.random() - .5);
+}
+
+function generateOneMarketItem() {
+  const cats = Object.keys(TEMPLATES);
+  const cat = pick(cats);
+  const tpl = pick(TEMPLATES[cat]);
+  const archKey = pick(Object.keys(SELLER_ARCHETYPES));
+  const arch = SELLER_ARCHETYPES[archKey];
+  return {
+    id: uid(), category: cat, title: tpl.t, desc: tpl.d, image: tpl.i,
+    sellerName: pick(NPC_NAMES), archetype: archKey,
+    askPrice: Math.round(tpl.m * tpl.ask / 100) * 100,
+    marketPrice: tpl.m,
+    minPrice: Math.round(tpl.m * Math.max(tpl.min, arch.minMul) / 100) * 100,
+    isActive: true, createdAt: Date.now()
+  };
+}
+
+function defaultState() {
+  return {
+    playerId: PLAYER_ID, playerName: PLAYER_NAME,
+    balance: 20000,
+    market: generateMarket(),
+    inventory: [], chats: [], messages: [], deals: [],
+    settings: { testMode: true, buyerDelayMin: 10, buyerDelayMax: 60 }
+  };
+}
+
+async function loadGame() {
+  try {
+    const cached = localStorage.getItem('perekup_cache_' + PLAYER_ID);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed && parsed.market) return parsed;
+    }
+  } catch(e) {}
+  try {
+    const { data, error } = await sb.from('games').select('state').eq('tg_id', PLAYER_ID).maybeSingle();
+    if (error) throw error;
+    if (data?.state && data.state.market) return data.state;
+  } catch(e) {
+    console.warn('Supabase load failed:', e);
+  }
+  return defaultState();
+}
+
+function saveGame() {
+  if (!state) return;
+  localStorage.setItem('perekup_cache_' + PLAYER_ID, JSON.stringify(state));
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(async () => {
+    try {
+      await sb.from('games').upsert({
+        tg_id: PLAYER_ID, state: state, updated_at: new Date().toISOString()
+      });
+    } catch(e) {
+      console.warn('Supabase save failed:', e);
+    }
+  }, 800);
+}
+
+function renderBalance() { $('#balance').textContent = fmt(state.balance); }
+
+/* ===== NAV ===== */
+function switchTab(tab) {
+  const tabEl = $('#tab-' + tab);
+  if (!tabEl) return;
+  $$('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  $$('.tab').forEach(t => t.classList.remove('active'));
+  tabEl.classList.add('active');
+  try {
+    if (tab === 'market')    renderMarket();
+    if (tab === 'online')    renderOnline();
+    if (tab === 'inventory') renderInventory();
+    if (tab === 'repair')    renderRepair();
+    if (tab === 'chats')     { renderChats(); unreadChats = 0; updateChatsDot(); }
+    if (tab === 'history')   renderHistory();
+    if (tab === 'settings')  renderSettings();
+  } catch(e) { console.error('switchTab error:', e); }
+}
+
+function updateChatsDot() {
+  const dot = $('#chatsDot');
+  if (dot) dot.style.display = unreadChats > 0 ? 'block' : 'none';
+}
+
+/* ===== MARKET ===== */
+function renderCategories() {
+  $('#cats').innerHTML = CATEGORIES.map(c =>
+    `<button class="cat ${c.id === activeCategory ? 'active' : ''}" data-cat="${c.id}">${c.label}</button>`
+  ).join('');
+  $$('#cats .cat').forEach(b => b.addEventListener('click', () => {
+    activeCategory = b.dataset.cat; renderMarket();
+  }));
+}
+
+function renderMarket() {
+  renderCategories();
+  const isRich = state.balance >= 100000;
+
+  let available = state.market.filter(m => m.isActive);
+  if (isRich) available = available.slice(0, 3);
+
+  const items = activeCategory === 'all'
+    ? available
+    : available.filter(m => m.category === activeCategory);
+
+  const richBanner = isRich ? `
+    <div class="card warn">
+      <div style="font-size:13px;color:var(--yellow);line-height:1.5;">
+        ⚠️ Баланс выше 100 000 ₽ — на NPC-рынке доступно только <b>3 предмета</b>.<br>
+        Реальные сделки ищи во вкладке <b>👥 Онлайн</b>.
+      </div>
+    </div>` : '';
+
+  if (!items.length) {
+    $('#listings').innerHTML = richBanner + `<div class="empty"><div class="big">🏪</div>Здесь пока пусто</div>`;
+    return;
+  }
+
+  $('#listings').innerHTML = richBanner + items.map(it => {
+    const arche = SELLER_ARCHETYPES[it.archetype];
+    const hasChat = state.chats.find(c => c.kind === 'seller' && c.refId === it.id);
+    return `
+      <div class="card listing">
+        <div class="thumb">${it.image}</div>
+        <div class="info">
+          <div class="title">${escapeHtml(it.title)}</div>
+          <div class="desc">${escapeHtml(it.desc)}</div>
+          <div class="prices">
+            <span class="price-ask">${fmt(it.askPrice)}</span>
+            <span class="price-mkt">${fmt(it.marketPrice)}</span>
+          </div>
+          <div class="seller">${it.sellerName} · ${arche.label}</div>
+          <button class="btn sm" data-open="${it.id}">
+            ${hasChat ? '💬 Открыть чат' : '✍️ Написать продавцу'}
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+  $$('[data-open]').forEach(b => b.addEventListener('click', () => openSellerChat(b.dataset.open)));
+}
