@@ -1,0 +1,2349 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0e0f13">
+<title>Перекуп Симулятор</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#0e0f13;--bg2:#16181f;--card:#1c1f28;--card2:#232733;--line:#2a2f3a;--text:#eef1f6;--muted:#8b93a7;--accent:#4f8cff;--green:#2ecc71;--red:#ff5c6c;--yellow:#ffce4a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro","Segoe UI",Roboto,sans-serif;overscroll-behavior:none;font-size:15px;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font-family:inherit}
+.hidden{display:none !important}
+.muted{color:var(--muted)}
+.loader{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.spinner{width:40px;height:40px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-text{color:var(--muted);font-size:13px}
+.auth-screen{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(180deg,#0e0f13,#16181f);overflow-y:auto}
+.auth-card{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:28px 22px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.auth-logo{font-size:52px;text-align:center;margin-bottom:8px;line-height:1}
+.auth-card h1{margin:0 0 6px;font-size:22px;text-align:center;font-weight:800}
+.auth-sub{margin:0 0 24px;font-size:13px;color:var(--muted);text-align:center}
+.auth-tabs{display:flex;gap:6px;margin-bottom:16px;background:var(--bg2);padding:4px;border-radius:12px}
+.auth-tabs button{flex:1;padding:10px;border:none;background:none;color:var(--muted);font-weight:600;border-radius:8px;cursor:pointer;font-size:14px;transition:.15s}
+.auth-tabs button.active{background:var(--accent);color:#fff}
+.auth-card input{width:100%;padding:14px 16px;margin-bottom:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);color:var(--text);font-size:15px;outline:none;transition:.15s}
+.auth-card input:focus{border-color:var(--accent)}
+.auth-error{margin-top:12px;padding:10px 12px;border-radius:10px;background:rgba(255,92,108,.15);color:var(--red);font-size:13px;display:none;text-align:center}
+.auth-error.show{display:block}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:14px;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;color:#fff;background:var(--accent)}
+.btn:active{transform:scale(.98);opacity:.9}
+.btn:disabled{opacity:.5;pointer-events:none}
+.btn.primary{background:var(--accent)}.btn.green{background:var(--green)}.btn.red{background:var(--red)}.btn.yellow{background:var(--yellow);color:#000}
+.btn.ghost{background:transparent;color:var(--muted);margin-top:8px;padding:10px}
+.btn.sm{padding:10px 14px;font-size:13px;border-radius:12px;width:auto}
+.app{display:flex;flex-direction:column;height:100%}
+.topbar{position:sticky;top:0;z-index:50;padding:14px 16px;background:linear-gradient(180deg,#14161d,#14161df5);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.topbar-left{flex:1;min-width:0}
+.user-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.user-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+.badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;background:var(--accent);color:#fff;white-space:nowrap}
+.xp-bar{height:4px;background:var(--bg);border-radius:4px;overflow:hidden}
+.xp-bar>div{height:100%;background:var(--accent);width:0;transition:.4s;border-radius:4px}
+.topbar-right{flex-shrink:0}
+.balance{font-weight:800;font-size:16px;background:var(--card);padding:8px 14px;border-radius:12px;border:1px solid var(--line);white-space:nowrap}
+main{flex:1;overflow-y:auto;padding:14px;padding-bottom:110px;-webkit-overflow-scrolling:touch}
+.screen{display:none;animation:fade .25s ease}
+.screen.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;justify-content:space-around;background:#14161df2;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:8px 4px calc(env(safe-area-inset-bottom,0px) + 8px);overflow-x:auto;scrollbar-width:none}
+.bottom-nav::-webkit-scrollbar{display:none}
+.bottom-nav button{background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:600;cursor:pointer;flex:0 0 auto;min-width:56px;padding:4px 6px;transition:.15s;font-family:inherit;position:relative}
+.bottom-nav button span{font-size:18px;line-height:1}
+.bottom-nav button.active{color:var(--accent)}
+.nav-dot{position:absolute;top:2px;right:18%;width:8px;height:8px;background:var(--red);border-radius:50%}
+.section-title{font-size:15px;font-weight:800;margin:20px 0 10px;padding:0 2px}
+.hero-card{background:linear-gradient(135deg,rgba(79,140,255,.15),rgba(79,140,255,.02));border:1px solid rgba(79,140,255,.3);border-radius:20px;padding:20px;margin-bottom:16px}
+.hero-title{font-size:14px;color:var(--muted);margin-bottom:4px}
+.hero-sub{font-size:12px;color:var(--muted);margin-bottom:6px}
+.hero-balance{font-size:32px;font-weight:800;margin-bottom:16px;background:linear-gradient(135deg,#fff,#4f8cff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--card);padding:10px;border-radius:12px;text-align:center;border:1px solid var(--line)}
+.stat-val{font-size:16px;font-weight:800;margin-bottom:2px}
+.stat-lbl{font-size:10px;color:var(--muted);line-height:1.2}
+.daily-card{background:linear-gradient(135deg,rgba(255,206,74,.15),rgba(255,206,74,.02));border:1px solid rgba(255,206,74,.35);border-radius:16px;padding:16px;margin-bottom:16px}
+.daily-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.daily-title{font-weight:800;font-size:14px}
+.daily-streak{font-size:12px;color:var(--yellow);font-weight:700}
+.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.quick-btn{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--text);cursor:pointer;font-weight:600;transition:.15s;font-family:inherit}
+.quick-btn:active{transform:scale(.96);background:var(--card2)}
+.quick-ico{font-size:22px}
+.tabs-market{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:14px}
+.tabs-market button{flex:1;padding:10px 6px;border:none;background:none;color:var(--muted);font-weight:700;border-radius:10px;cursor:pointer;font-size:13px;transition:.15s;font-family:inherit}
+.tabs-market button.active{background:var(--accent);color:#fff}
+.listings-grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:700px){.listings-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1100px){.listings-grid{grid-template-columns:repeat(3,1fr)}}
+.car-card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;animation:fade .25s;margin-bottom:12px}
+.car-card .img{width:100%;height:170px;object-fit:cover;display:block;background:var(--card2)}
+.car-card .body{padding:14px}
+.car-card .title{font-size:15px;font-weight:800;margin-bottom:4px}
+.car-card .meta{font-size:12px;color:var(--muted);margin-bottom:8px}
+.car-card .price{font-size:18px;font-weight:800;color:var(--accent);margin-bottom:10px}
+.car-card .seller{font-size:12px;color:var(--muted);margin-bottom:10px}
+.car-card .actions{display:flex;gap:6px}
+.filters{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:14px}
+.filter-input,.filter-select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--text);font-size:14px;outline:none;margin-bottom:8px}
+.filter-input:focus,.filter-select:focus{border-color:var(--accent)}
+.filter-row{display:flex;gap:8px;margin-bottom:8px}
+.filter-row>*{flex:1;margin-bottom:0}
+.car-row{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.car-row .title{font-weight:800;font-size:14px;margin-bottom:6px}
+.car-row .row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px}
+.car-row .row b{color:var(--text);font-weight:700}
+.car-row .profit{color:var(--green);font-weight:800;font-size:14px;margin-top:8px;margin-bottom:10px}
+.car-row .profit.neg{color:var(--red)}
+.condition-bar{height:6px;background:var(--bg2);border-radius:3px;overflow:hidden;margin:6px 0 10px}
+.condition-bar>div{height:100%;background:var(--green);transition:.3s;border-radius:3px}
+.modal{position:fixed;inset:0;z-index:200;display:flex;align-items:flex-end;justify-content:center}
+.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.modal-sheet{position:relative;background:var(--bg2);width:100%;max-width:560px;border-radius:24px 24px 0 0;padding:20px 18px calc(env(safe-area-inset-bottom,0px) + 20px);max-height:88vh;overflow-y:auto;animation:slideUp .25s ease}
+@media(min-width:700px){.modal{align-items:center}.modal-sheet{border-radius:24px;max-height:85vh}}
+@keyframes slideUp{from{transform:translateY(40px);opacity:.5}to{transform:none;opacity:1}}
+.modal-sheet h3{margin:0 0 8px;font-size:18px;font-weight:800}
+.modal-sheet p{margin:0 0 14px;color:var(--muted);font-size:13px;line-height:1.5}
+.modal-sheet img{border-radius:12px;margin-bottom:14px}
+.modal-sheet input{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:16px;font-weight:600;outline:none;margin-bottom:12px}
+.modal-sheet input:focus{border-color:var(--accent)}
+.modal-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:14px;border-bottom:1px solid var(--line);gap:10px}
+.modal-row:last-of-type{border-bottom:none}
+.modal-row .k{color:var(--muted)}
+.modal-row .v{font-weight:700;text-align:right}
+.modal-actions{display:flex;gap:8px;margin-top:14px}
+.modal-actions>*{flex:1}
+.achievements-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.ach{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center;opacity:.4;transition:.2s}
+.ach.unlocked{opacity:1;border-color:var(--green);background:linear-gradient(135deg,rgba(46,204,113,.1),transparent)}
+.ach .ico{font-size:28px;margin-bottom:6px}
+.ach .t{font-size:12px;font-weight:700;margin-bottom:2px}
+.ach .d{font-size:10px;color:var(--muted);line-height:1.3}
+.tx{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.tx .tx-info{flex:1;min-width:0}
+.tx .tx-title{font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx .tx-date{font-size:11px;color:var(--muted)}
+.tx .tx-amount{font-weight:800;font-size:14px;white-space:nowrap;margin-left:8px}
+.tx .tx-amount.pos{color:var(--green)}.tx .tx-amount.neg{color:var(--red)}
+.profile-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;text-align:center;margin-bottom:16px}
+.profile-avatar{font-size:56px;margin-bottom:8px;line-height:1}
+.profile-name{font-size:20px;font-weight:800;margin-bottom:4px}
+.profile-level{font-size:13px;color:var(--accent);font-weight:700;margin-bottom:12px}
+.profile-xp-bar{height:8px;background:var(--bg2);border-radius:4px;overflow:hidden;margin-bottom:6px}
+.profile-xp-bar>div{height:100%;background:var(--accent);width:0;transition:.4s}
+.profile-xp-text{font-size:11px;color:var(--muted)}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.stat-box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+.stat-box-val{font-size:18px;font-weight:800;margin-bottom:4px}
+.stat-box-lbl{font-size:11px;color:var(--muted)}
+.toast{position:fixed;left:50%;top:20px;transform:translateX(-50%) translateY(-20px);background:var(--card);color:var(--text);padding:12px 18px;border-radius:14px;font-size:13px;font-weight:600;border:1px solid var(--line);box-shadow:0 10px 40px rgba(0,0,0,.6);z-index:400;opacity:0;pointer-events:none;transition:.3s;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:var(--green)}.toast.err{border-color:var(--red)}.toast.warn{border-color:var(--yellow)}
+.empty{text-align:center;color:var(--muted);padding:40px 20px;font-size:14px}
+.empty .big{font-size:42px;margin-bottom:10px;line-height:1}
+.chat-item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;cursor:pointer;display:flex;gap:12px;align-items:center;transition:.15s}
+.chat-item:active{background:var(--card2)}
+.chat-avatar{width:46px;height:46px;border-radius:50%;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:22px;border:1px solid var(--line);flex-shrink:0}
+.chat-meta{flex:1;min-width:0}
+.chat-name{font-weight:700;font-size:14px;margin-bottom:2px}
+.chat-last{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-badge{font-size:10px;padding:3px 8px;border-radius:8px;background:var(--green);color:#fff;font-weight:700;flex-shrink:0}
+.chat-badge.deal{background:var(--yellow);color:#000}
+.chat-badge.declined{background:var(--red);color:#fff}
+.chat-badge.sell{background:var(--accent);color:#fff}
+.chat-badge.player{background:var(--green);color:#fff}
+.chat-badge.property{background:#ff8c42;color:#fff}
+.chat-screen{position:fixed;inset:0;z-index:150;background:var(--bg);display:none;flex-direction:column}
+.chat-screen.open{display:flex}
+.chat-screen header{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top,0px) + 12px) 14px 12px;border-bottom:1px solid var(--line);background:var(--bg2)}
+.chat-screen header button.back{background:none;border:none;color:var(--accent);font-size:22px;cursor:pointer;padding:4px 6px}
+.chat-screen header .info{flex:1;min-width:0}
+.chat-screen header .info .n{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-screen header .info .s{font-size:11px;color:var(--muted)}
+.chat-screen header .wallet{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--yellow);white-space:nowrap}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:78%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.35;word-wrap:break-word;animation:fade .2s}
+.msg.npc{background:var(--card);border-bottom-left-radius:4px;align-self:flex-start}
+.msg.player{background:var(--accent);color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+.chat-input-bar{display:flex;gap:8px;padding:10px 12px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px);background:var(--bg2);border-top:1px solid var(--line)}
+.chat-input-bar input{flex:1;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:11px 16px;color:var(--text);font-size:14px;outline:none}
+.chat-input-bar button.send{background:var(--accent);color:#fff;border:none;width:44px;height:44px;border-radius:50%;font-size:18px;cursor:pointer}
+.chat-action-bar{padding:10px 12px;background:var(--bg2);border-top:1px solid var(--line)}
+.chat-action-bar:empty{display:none}
+.chat-action-bar button{width:100%;background:var(--green);color:#fff;border:none;padding:14px;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+.chat-quick{display:flex;gap:6px;overflow-x:auto;padding:8px 12px;background:var(--bg2);border-top:1px solid var(--line);scrollbar-width:none}
+.chat-quick::-webkit-scrollbar{display:none}
+.chat-quick:empty{display:none}
+.chat-quick button{flex:0 0 auto;padding:8px 14px;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.15s}
+.chat-quick button:active{transform:scale(.96);background:var(--card2)}
+.chat-quick button.green{border-color:var(--green);color:var(--green)}
+.chat-quick button.yellow{border-color:var(--yellow);color:var(--yellow)}
+.chat-quick button.red{border-color:var(--red);color:var(--red)}
+.trip-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px}
+.trip-progress{height:8px;background:var(--bg2);border-radius:4px;overflow:hidden;margin:12px 0}
+.trip-progress > div{height:100%;background:var(--accent);width:0;transition:width .5s linear;border-radius:4px}
+.trip-info{font-size:13px;color:var(--muted);line-height:1.6}
+.trip-info b{color:var(--text)}
+.upgrade-badge{font-size:10px;padding:2px 6px;border-radius:6px;background:var(--accent);color:#fff;font-weight:700;margin-left:6px}
+.upgrade-badge.max{background:var(--green)}
+.warn-box{background:rgba(255,206,74,.12);border:1px solid rgba(255,206,74,.5);border-radius:12px;padding:10px 12px;font-size:12px;color:var(--yellow);margin-bottom:12px;line-height:1.4}
+</style>
+</head>
+<body>
+
+<div id="loader" class="loader">
+  <div class="spinner"></div>
+  <div class="loader-text">Загрузка...</div>
+</div>
+
+<div id="authScreen" class="auth-screen hidden">
+  <div class="auth-card">
+    <div class="auth-logo">🚗</div>
+    <h1>Перекуп Симулятор</h1>
+    <p class="auth-sub">Скупай. Ремонтируй. Продавай.</p>
+    <div class="auth-tabs">
+      <button type="button" data-mode="login" class="active">Вход</button>
+      <button type="button" data-mode="register">Регистрация</button>
+    </div>
+    <input id="authUsername" type="text" placeholder="Имя" autocomplete="username" maxlength="30">
+    <input id="authPassword" type="password" placeholder="Пароль (мин. 6)" autocomplete="current-password">
+    <button id="authBtn" class="btn primary">Войти</button>
+    <div id="authError" class="auth-error"></div>
+  </div>
+</div>
+
+<div id="app" class="app hidden">
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="user-row">
+        <span class="user-name" id="pUsername">—</span>
+        <span class="badge level" id="pLevel">Lv. 1</span>
+      </div>
+      <div class="xp-bar"><div id="pXpFill"></div></div>
+    </div>
+    <div class="topbar-right">
+      <div class="balance" id="pBalance">0 ₽</div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section id="screen-home" class="screen active">
+      <div class="hero-card">
+        <div class="hero-title">Привет, <span id="homeName">игрок</span>!</div>
+        <div class="hero-sub">Твой капитал сегодня:</div>
+        <div class="hero-balance" id="homeBalance">0 ₽</div>
+        <div class="hero-stats">
+          <div class="stat"><div class="stat-val" id="homeCars">0</div><div class="stat-lbl">Машин в гараже</div></div>
+          <div class="stat"><div class="stat-val" id="homeProps">0</div><div class="stat-lbl">Недвижимости</div></div>
+          <div class="stat"><div class="stat-val" id="homeProfit">0 ₽</div><div class="stat-lbl">Общая прибыль</div></div>
+        </div>
+      </div>
+      <div class="daily-card" id="dailyCard">
+        <div class="daily-header">
+          <div class="daily-title">🎁 Ежедневный бонус</div>
+          <div class="daily-streak" id="dailyStreak">Стрик: 0</div>
+        </div>
+        <button class="btn yellow" id="claimBonusBtn">Забрать бонус</button>
+      </div>
+      <div class="quick-actions">
+        <button class="quick-btn" data-goto="listings"><span class="quick-ico">🚗</span><span>Авто</span></button>
+        <button class="quick-btn" data-goto="properties"><span class="quick-ico">🏢</span><span>Недвижка</span></button>
+        <button class="quick-btn" data-goto="chats"><span class="quick-ico">💬</span><span>Чаты</span></button>
+        <button class="quick-btn" data-goto="garage"><span class="quick-ico">🔧</span><span>Гараж</span></button>
+      </div>
+      <div class="section-title">🎯 Ежедневные задания</div>
+      <div id="dailyTasks"></div>
+    </section>
+
+    <section id="screen-listings" class="screen">
+      <div class="tabs-market">
+        <button data-market="npc" class="active">🤖 От NPC</button>
+        <button data-market="players">👥 От игроков</button>
+      </div>
+      <div class="filters">
+        <input id="fSearch" class="filter-input" placeholder="🔍 Поиск марки или модели">
+        <div class="filter-row">
+          <select id="fBrand" class="filter-select"><option value="">Марка: все</option></select>
+          <select id="fSort" class="filter-select">
+            <option value="new">Новые</option>
+            <option value="cheap">Дешевле</option>
+            <option value="expensive">Дороже</option>
+            <option value="profit">Выгодные</option>
+          </select>
+        </div>
+        <div class="filter-row">
+          <input id="fPriceMin" type="number" class="filter-input" placeholder="Цена от">
+          <input id="fPriceMax" type="number" class="filter-input" placeholder="Цена до">
+        </div>
+      </div>
+      <div id="listings" class="listings-grid"></div>
+    </section>
+
+    <section id="screen-properties" class="screen">
+      <div class="tabs-market">
+        <button data-prop-tab="buy-npc" class="active">🤖 От NPC</button>
+        <button data-prop-tab="buy-players">👥 От игроков</button>
+        <button data-prop-tab="my">🏢 Мои</button>
+      </div>
+      <div id="propsContent"></div>
+    </section>
+
+    <section id="screen-chats" class="screen">
+      <div class="section-title">💬 Мои чаты</div>
+      <div id="chatsList"></div>
+    </section>
+
+    <section id="screen-trip" class="screen">
+      <div class="section-title">🚕 Активная поездка</div>
+      <div id="tripActive"></div>
+    </section>
+
+    <section id="screen-garage" class="screen">
+      <div class="section-title">🔧 Мой гараж</div>
+      <div id="garage"></div>
+    </section>
+
+    <section id="screen-sales" class="screen">
+      <div class="section-title">💰 Мои объявления на продажу</div>
+      <div id="myListings"></div>
+      <div class="section-title">📊 История сделок</div>
+      <div id="history"></div>
+    </section>
+
+    <section id="screen-market" class="screen">
+      <div class="section-title">📈 Средние цены на рынке</div>
+      <div id="marketPrices"></div>
+      <div class="section-title">⚡️ События</div>
+      <div id="marketEvents"></div>
+    </section>
+
+    <section id="screen-profile" class="screen">
+      <div class="profile-card">
+        <div class="profile-avatar" id="profAvatar">👤</div>
+        <div class="profile-name" id="profName">—</div>
+        <div class="profile-level" id="profLevel">Уровень 1</div>
+        <div class="profile-xp">
+          <div class="profile-xp-bar"><div id="profXpFill"></div></div>
+          <div class="profile-xp-text" id="profXpText">0 / 100 XP</div>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-box-val" id="profBalance">0 ₽</div><div class="stat-box-lbl">Баланс</div></div>
+        <div class="stat-box"><div class="stat-box-val" id="profBought">0</div><div class="stat-box-lbl">Куплено</div></div>
+        <div class="stat-box"><div class="stat-box-val" id="profSold">0</div><div class="stat-box-lbl">Продано</div></div>
+        <div class="stat-box"><div class="stat-box-val" id="profProfit">0 ₽</div><div class="stat-box-lbl">Прибыль</div></div>
+      </div>
+      <div class="section-title">🏆 Достижения</div>
+      <div id="achievements" class="achievements-grid"></div>
+
+      <div id="adminSection" class="hidden" style="margin-top:20px;">
+        <button class="btn yellow" id="adminBtn">⚙️ Админ-панель</button>
+      </div>
+
+      <button class="btn red" id="logoutBtn" style="margin-top:20px;">Выйти</button>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button data-screen="home" class="active"><span>🏠</span>Главная</button>
+    <button data-screen="listings"><span>🚗</span>Авто</button>
+    <button data-screen="properties"><span>🏢</span>Недвижка</button>
+    <button data-screen="chats"><span>💬</span>Чаты</button>
+    <button data-screen="trip"><span>🚕</span>Поездка</button>
+    <button data-screen="garage"><span>🔧</span>Гараж</button>
+    <button data-screen="profile"><span>👤</span>Профиль</button>
+  </nav>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-backdrop" data-close="1"></div>
+  <div class="modal-sheet" id="modalSheet"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+window.APP_CONFIG = {
+  SUPABASE_URL: 'https://enfcdukkodrxiwozqmit.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_ohSgb-xAeCwnpr9czlCOtw_KQ6ZaNEz'
+};
+</script>
+
+<script>
+const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, storage: window.localStorage }
+});
+
+let currentUser = null;
+let profile = null;
+let currentScreen = 'home';
+let listingsCache = [];
+let garageCache = [];
+let marketTab = 'npc';
+let propTab = 'buy-npc';
+let _tripInterval = null;
+let _tripFinishing = false;   // защита от повторного завершения поездки
+
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+function fmt(n) {
+  const s = Math.round(n || 0).toLocaleString('ru-RU');
+  return s.replace(/\s/g, '.') + ' ₽';
+}
+function fmtShort(n) {
+  n = Math.round(n || 0);
+  const sign = n < 0 ? '-' : '';
+  const a = Math.abs(n);
+  if (a >= 1e9) return sign + (a/1e9).toFixed(1) + ' млрд ₽';
+  if (a >= 1e6) return sign + (a/1e6).toFixed(1) + ' млн ₽';
+  if (a >= 1e3) return sign + (a/1e3).toFixed(0) + 'к ₽';
+  return n + ' ₽';
+}
+function fmtInput(n) {
+  const s = Math.round(n || 0).toLocaleString('ru-RU');
+  return s.replace(/\s/g, '.');
+}
+function parseNum(text) {
+  return parseInt(String(text).replace(/\D/g, ''), 10) || 0;
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function toast(msg, kind = '') {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + kind;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = 'toast ' + kind, 2500);
+}
+function showLoader() { $('#loader').classList.remove('hidden'); }
+function hideLoader() { $('#loader').classList.add('hidden'); }
+function openModal(html) { $('#modalSheet').innerHTML = html; $('#modal').classList.remove('hidden'); }
+function closeModal() { $('#modal').classList.add('hidden'); }
+function xpForLevel(level) { return 100 + (level - 1) * 150; }
+
+function attachPriceInput(input, onChange) {
+  input.addEventListener('input', (e) => {
+    let raw = e.target.value.replace(/\D/g, '');
+    if (raw === '') { e.target.value = ''; if (onChange) onChange(0); return; }
+    const formatted = raw.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    e.target.value = formatted;
+    if (onChange) onChange(parseInt(raw, 10) || 0);
+  });
+}
+
+/* ============ АВТОРИЗАЦИЯ ============ */
+let authMode = 'login';
+
+$$('.auth-tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    authMode = btn.dataset.mode;
+    $$('.auth-tabs button').forEach(b => b.classList.toggle('active', b === btn));
+    $('#authBtn').textContent = authMode === 'login' ? 'Войти' : 'Зарегистрироваться';
+    $('#authError').classList.remove('show');
+  });
+});
+
+function nameToEmail(name) {
+  const clean = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) - hash) + name.charCodeAt(i);
+    hash |= 0;
+  }
+  const h = Math.abs(hash).toString(36);
+  const safe = clean || 'user';
+  return safe + '_' + h + '@perekup.local';
+}
+
+$('#authBtn').addEventListener('click', async () => {
+  const username = $('#authUsername').value.trim();
+  const password = $('#authPassword').value;
+  const errEl = $('#authError');
+  errEl.classList.remove('show');
+
+  if (!username || !password) { errEl.textContent = 'Заполни имя и пароль'; errEl.classList.add('show'); return; }
+  if (username.length < 2) { errEl.textContent = 'Имя минимум 2 символа'; errEl.classList.add('show'); return; }
+  if (password.length < 6) { errEl.textContent = 'Пароль минимум 6 символов'; errEl.classList.add('show'); return; }
+
+  $('#authBtn').disabled = true;
+  $('#authBtn').textContent = 'Подожди...';
+
+  try {
+    if (authMode === 'register') {
+      const email = nameToEmail(username);
+      const { error } = await sb.auth.signUp({ email, password, options: { data: { username } } });
+      if (error) {
+        const msg = (error.message || '').toLowerCase();
+        if (msg.includes('already')) throw new Error('Это имя уже занято. Попробуй другое или войди.');
+        throw error;
+      }
+      toast('Аккаунт создан!', 'ok');
+    } else {
+      const { data: email, error: findErr } = await sb.rpc('rpc_find_email_by_name', { p_username: username });
+      let finalEmail = email;
+      if (findErr || !finalEmail) finalEmail = nameToEmail(username);
+      const { error: loginErr } = await sb.auth.signInWithPassword({ email: finalEmail, password });
+      if (loginErr) throw new Error('Неверное имя или пароль');
+    }
+    await initAfterAuth();
+  } catch (e) {
+    errEl.textContent = e.message || 'Ошибка';
+    errEl.classList.add('show');
+  } finally {
+    $('#authBtn').disabled = false;
+    $('#authBtn').textContent = authMode === 'login' ? 'Войти' : 'Зарегистрироваться';
+  }
+});
+
+$('#logoutBtn').addEventListener('click', async () => {
+  await sb.auth.signOut();
+  location.reload();
+});
+
+/* ============ ИНИЦИАЛИЗАЦИЯ ============ */
+async function initAfterAuth() {
+  showLoader();
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { $('#authScreen').classList.remove('hidden'); $('#app').classList.add('hidden'); return; }
+    currentUser = user;
+
+    let attempts = 0;
+    while (attempts < 10) {
+      const { data } = await sb.from('profiles').select('*').eq('id', user.id).maybeSingle();
+      if (data) { profile = data; break; }
+      await new Promise(r => setTimeout(r, 500));
+      attempts++;
+    }
+    if (!profile) throw new Error('Профиль не создан');
+
+    $('#authScreen').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+
+    renderProfileHeader();
+    await ensureNpcListings();
+    await goTo('home');
+    subscribeRealtime();
+    startNpcAutoSpawn();
+    startBuyerAutoSpawn();
+    startUnreadBadge();
+    await checkAdmin();
+    await collectPropertyIncome();
+  } catch (e) {
+    console.error(e);
+    toast('Ошибка: ' + e.message, 'err');
+  } finally {
+    hideLoader();
+  }
+}
+
+async function ensureNpcListings() {
+  const { count } = await sb.from('listings')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'active').eq('is_npc', true);
+  if ((count || 0) < 5) await sb.rpc('rpc_spawn_npc_listings', { p_count: 15 });
+
+  const { count: propCount } = await sb.from('property_npc_listings')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'active');
+  if ((propCount || 0) < 5) await sb.rpc('rpc_spawn_npc_property_listings', { p_count: 15 });
+}
+
+let npcSpawnInterval = null;
+function startNpcAutoSpawn() {
+  if (npcSpawnInterval) return;
+  npcSpawnInterval = setInterval(async () => {
+    if (!currentUser) return;
+    try {
+      await sb.rpc('rpc_spawn_npc_listings', { p_count: 5 });
+      await sb.rpc('rpc_spawn_npc_property_listings', { p_count: 3 });
+      if (currentScreen === 'listings') await renderListings();
+      if (currentScreen === 'properties') await renderProperties();
+    } catch (e) {}
+  }, 10 * 60 * 1000);
+}
+
+let buyerSpawnInterval = null;
+function startBuyerAutoSpawn() {
+  if (buyerSpawnInterval) return;
+  buyerSpawnInterval = setInterval(async () => {
+    if (!currentUser) return;
+    try {
+      const { data: cars } = await sb.from('player_cars')
+        .select('*').eq('owner_id', currentUser.id).eq('status', 'listed').eq('sale_type', 'npc');
+      if (!cars || !cars.length) return;
+      for (const car of cars) {
+        const { data: existing } = await sb.from('chats')
+          .select('id').eq('my_car_id', car.id).in('status', ['active','deal']).maybeSingle();
+        if (existing) continue;
+        if (Math.random() < 0.4) {
+          const { data } = await sb.rpc('rpc_spawn_buyer', { p_car_id: car.id });
+          if (data?.ok) toast('💬 Покупатель: ' + (data.npc_name || 'бот'), 'ok');
+        }
+      }
+    } catch (e) {}
+  }, 30 * 1000);
+}
+
+let unreadInterval = null;
+function startUnreadBadge() {
+  if (unreadInterval) return;
+  unreadInterval = setInterval(async () => {
+    if (!currentUser) return;
+    try {
+      const { data } = await sb.rpc('rpc_count_unread');
+      const chatBtn = document.querySelector('[data-screen="chats"]');
+      if (!chatBtn) return;
+      const existing = chatBtn.querySelector('.nav-dot');
+      if (data > 0 && !existing) chatBtn.insertAdjacentHTML('beforeend', '<span class="nav-dot"></span>');
+      else if (data === 0 && existing) existing.remove();
+    } catch (e) {}
+  }, 15000);
+}
+
+/* ============ НАВИГАЦИЯ ============ */
+async function goTo(screen) {
+  if (_tripInterval) { clearInterval(_tripInterval); _tripInterval = null; }
+  _tripFinishing = false;
+  currentScreen = screen;
+  $$('.screen').forEach(s => s.classList.remove('active'));
+  const el = $('#screen-' + screen);
+  if (el) el.classList.add('active');
+  $$('.bottom-nav button').forEach(b => b.classList.toggle('active', b.dataset.screen === screen));
+  $('#main').scrollTop = 0;
+  try {
+    if (screen === 'home') await renderHome();
+    if (screen === 'listings') await renderListings();
+    if (screen === 'properties') await renderProperties();
+    if (screen === 'chats') await renderChats();
+    if (screen === 'trip') await renderTripScreen();
+    if (screen === 'garage') await renderGarage();
+    if (screen === 'sales') await renderSales();
+    if (screen === 'market') await renderMarket();
+    if (screen === 'profile') await renderProfileFull();
+  } catch (e) { console.error(e); toast('Ошибка: ' + e.message, 'err'); }
+}
+
+$$('.bottom-nav button').forEach(btn => btn.addEventListener('click', () => goTo(btn.dataset.screen)));
+$$('[data-goto]').forEach(btn => btn.addEventListener('click', () => goTo(btn.dataset.goto)));
+
+$$('.tabs-market button[data-market]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    marketTab = btn.dataset.market;
+    $$('.tabs-market button[data-market]').forEach(b => b.classList.toggle('active', b === btn));
+    renderListings();
+  });
+});
+
+$$('.tabs-market button[data-prop-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    propTab = btn.dataset.propTab;
+    $$('.tabs-market button[data-prop-tab]').forEach(b => b.classList.toggle('active', b === btn));
+    renderProperties();
+  });
+});
+
+/* ============ ПРОФИЛЬ ============ */
+function renderProfileHeader() {
+  if (!profile) return;
+  $('#pUsername').textContent = profile.username;
+  $('#pLevel').textContent = 'Lv. ' + profile.level;
+  $('#pBalance').textContent = fmt(profile.balance);
+  const need = xpForLevel(profile.level);
+  const pct = Math.min(100, (profile.experience / need) * 100);
+  $('#pXpFill').style.width = pct + '%';
+}
+async function refreshProfile() {
+  const { data } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  if (data) { profile = data; renderProfileHeader(); }
+}
+
+/* ============ ГЛАВНАЯ ============ */
+async function renderHome() {
+  await refreshProfile();
+  $('#homeName').textContent = profile.username;
+  $('#homeBalance').textContent = fmt(profile.balance);
+
+  const { data: cars } = await sb.from('player_cars').select('id').eq('owner_id', currentUser.id).eq('status', 'in_garage');
+  const { data: props } = await sb.from('player_properties').select('id').eq('owner_id', currentUser.id).in('status', ['owned','listed']);
+
+  $('#homeCars').textContent = (cars || []).length + ' / ' + profile.garage_capacity;
+  $('#homeProps').textContent = (props || []).length;
+  $('#homeProfit').textContent = fmtShort(profile.total_profit);
+
+  const { data: bonus } = await sb.from('daily_bonus').select('*').eq('player_id', currentUser.id).maybeSingle();
+  const today = new Date().toISOString().slice(0,10);
+  const claimed = bonus?.last_claim === today;
+  $('#dailyStreak').textContent = 'Стрик: ' + (bonus?.streak || 0);
+  const btn = $('#claimBonusBtn');
+  btn.disabled = claimed;
+  btn.textContent = claimed ? '✅ Получено сегодня' : 'Забрать бонус';
+  await renderDailyTasks();
+}
+
+$('#claimBonusBtn').addEventListener('click', async () => {
+  const btn = $('#claimBonusBtn');
+  btn.disabled = true;
+  const { data, error } = await sb.rpc('rpc_claim_daily_bonus');
+  if (error || !data?.ok) { toast(data?.error || error?.message || 'Ошибка', 'err'); btn.disabled = false; return; }
+  toast('Бонус: +' + fmt(data.reward) + ' (стрик ' + data.streak + ')', 'ok');
+  await refreshProfile();
+  await renderHome();
+});
+
+async function renderDailyTasks() {
+  const el = $('#dailyTasks');
+  const today = new Date().toISOString().slice(0,10);
+  let { data: tasks } = await sb.from('daily_tasks').select('*').eq('player_id', currentUser.id).eq('date', today);
+  if (!tasks || tasks.length === 0) {
+    const pool = [
+      { type: 'buy_cars', target: 2, reward_money: 15000, reward_xp: 30 },
+      { type: 'sell_cars', target: 1, reward_money: 20000, reward_xp: 40 },
+      { type: 'repair', target: 1, reward_money: 8000, reward_xp: 15 }
+    ];
+    await sb.from('daily_tasks').insert(pool.map(p => ({
+      player_id: currentUser.id, task_type: p.type, target: p.target,
+      progress: 0, reward_money: p.reward_money, reward_xp: p.reward_xp, date: today
+    })));
+    const res = await sb.from('daily_tasks').select('*').eq('player_id', currentUser.id).eq('date', today);
+    tasks = res.data;
+  }
+  const labels = { buy_cars: 'Купить машины', sell_cars: 'Продать машины', repair: 'Отремонтировать' };
+  el.innerHTML = (tasks || []).map(t => {
+    const pct = Math.min(100, (t.progress / t.target) * 100);
+    const done = t.is_done || t.progress >= t.target;
+    return `<div class="car-row" style="margin-bottom:10px;">
+      <div class="title">${done ? '✅ ' : ''}${labels[t.task_type] || t.task_type}</div>
+      <div class="row"><span>${t.progress} / ${t.target}</span><b>+${fmt(t.reward_money)} / +${t.reward_xp} XP</b></div>
+      <div class="condition-bar"><div style="width:${pct}%;background:${done ? 'var(--green)' : 'var(--accent)'}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ============ ОБЪЯВЛЕНИЯ АВТО ============ */
+async function renderListings() {
+  const q = sb.from('listings').select('*').eq('status', 'active');
+  const { data } = marketTab === 'npc'
+    ? await q.eq('is_npc', true).order('created_at', { ascending: false }).limit(100)
+    : await q.eq('is_npc', false).order('created_at', { ascending: false }).limit(100);
+  listingsCache = data || [];
+
+  const brands = [...new Set(listingsCache.map(l => l.brand))].sort();
+  const brandSel = $('#fBrand');
+  const curBrand = brandSel.value;
+  brandSel.innerHTML = '<option value="">Марка: все</option>' + brands.map(b => `<option value="${esc(b)}">${esc(b)}</option>`).join('');
+  brandSel.value = curBrand;
+  applyFilters();
+}
+
+function applyFilters() {
+  const search = $('#fSearch').value.toLowerCase().trim();
+  const brand = $('#fBrand').value;
+  const sort = $('#fSort').value;
+  const pmin = parseInt($('#fPriceMin').value, 10) || 0;
+  const pmax = parseInt($('#fPriceMax').value, 10) || Infinity;
+
+  let list = listingsCache.filter(l => {
+    if (brand && l.brand !== brand) return false;
+    if (l.price < pmin || l.price > pmax) return false;
+    if (search) {
+      const hay = (l.brand + ' ' + l.model).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  if (sort === 'cheap') list.sort((a,b) => a.price - b.price);
+  else if (sort === 'expensive') list.sort((a,b) => b.price - a.price);
+  else if (sort === 'new') list.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  else if (sort === 'profit') list.sort((a,b) => (b.price - b.min_price) - (a.price - a.min_price));
+
+  const el = $('#listings');
+  if (!list.length) {
+    el.innerHTML = marketTab === 'npc'
+      ? '<div class="empty"><div class="big">🤖</div>Нет объявлений от NPC</div>'
+      : '<div class="empty"><div class="big">👥</div>Пока никто из игроков не выставил машину</div>';
+    return;
+  }
+
+  el.innerHTML = list.map(l => {
+    const cond = Object.values(l.condition || {});
+    const avgCond = cond.length ? Math.round(cond.reduce((a,b) => a+b, 0) / cond.length) : 50;
+    const isMine = l.seller_id === currentUser.id;
+    return `<div class="car-card" ${isMine ? 'style="border-color:rgba(255,206,74,.5)"' : ''}>
+      <img class="img" src="${esc(l.image_url || '')}" alt="" loading="lazy" onerror="this.style.display='none'">
+      <div class="body">
+        <div class="title">${esc(l.brand)} ${esc(l.model)}, ${l.year}</div>
+        <div class="meta">${l.mileage.toLocaleString('ru-RU')} км · ${esc(l.city)}</div>
+        <div class="price">${fmt(l.price)}</div>
+        <div class="seller">
+          ${isMine ? '⭐ <span style="color:var(--yellow);font-weight:700">Твоё объявление</span>'
+            : (l.is_npc ? '🤖 ' + esc(l.npc_name || 'Продавец') : '👤 Игрок')}
+          · состояние ${avgCond}%
+        </div>
+        <div class="actions"><button class="btn sm" data-view="${l.id}">Подробнее</button></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  $$('[data-view]').forEach(b => b.addEventListener('click', () => openListing(b.dataset.view)));
+}
+
+['#fSearch','#fBrand','#fSort','#fPriceMin','#fPriceMax'].forEach(sel => {
+  const el = $(sel);
+  el?.addEventListener('input', applyFilters);
+  el?.addEventListener('change', applyFilters);
+});
+
+async function openListing(id) {
+  const l = listingsCache.find(x => x.id === id);
+  if (!l) { toast('Объявление больше не доступно', 'warn'); return; }
+  const cond = l.condition || {};
+  const parts = [
+    ['engine','Двигатель'],['body','Кузов'],['suspension','Подвеска'],
+    ['gearbox','Коробка'],['electric','Электрика'],['interior','Салон'],
+    ['tires','Шины'],['oil','Масло']
+  ];
+  const condHtml = parts.map(([k, name]) => {
+    const val = cond[k];
+    return `<div class="modal-row"><span class="k">${name}</span><span class="v">${val != null ? val + '%' : '?'}</span></div>`;
+  }).join('');
+  const isMine = l.seller_id === currentUser.id;
+
+  const html = `
+    <h3>${esc(l.brand)} ${esc(l.model)}</h3>
+    <p>${l.year} г. · ${l.mileage.toLocaleString('ru-RU')} км · ${esc(l.city)}</p>
+    <img src="${esc(l.image_url || '')}" style="width:100%;border-radius:12px;margin-bottom:14px;" onerror="this.style.display='none'">
+    <div class="modal-row"><span class="k">Цена</span><span class="v" style="color:var(--accent)">${fmt(l.price)}</span></div>
+    <div class="modal-row"><span class="k">Мин. цена</span><span class="v">${fmt(l.min_price)}</span></div>
+    <div class="modal-row"><span class="k">Продавец</span><span class="v">${isMine ? 'Ты' : (l.is_npc ? esc(l.npc_name) : 'Игрок')}</span></div>
+    <p style="margin-top:14px;color:var(--muted);font-size:12px;">Состояние:</p>
+    ${condHtml}
+    ${isMine ? `
+      <div style="padding:12px;background:rgba(255,206,74,.1);border:1px solid rgba(255,206,74,.4);border-radius:12px;margin-top:14px;text-align:center;font-size:13px;color:var(--yellow);">
+        ⭐ Это твоё объявление. Ждёшь покупателя.
+      </div>
+    ` : `
+      <div class="modal-actions">
+        <button class="btn ghost" data-inspect="${l.id}">🔍 Осмотр (3 000 ₽)</button>
+        <button class="btn primary" data-chat="${l.id}">💬 Написать</button>
+      </div>
+    `}
+  `;
+  openModal(html);
+  bindCloseButtons();
+  if (!isMine) {
+    $$('[data-inspect]').forEach(b => b.addEventListener('click', () => inspectListing(l.id)));
+    $$('[data-chat]').forEach(b => b.addEventListener('click', () => startChatWithListing(l.id)));
+  }
+}
+
+async function inspectListing(id) {
+  const { data, error } = await sb.rpc('rpc_inspect_car', { p_listing_id: id });
+  if (error || !data?.ok) { toast(data?.error || error?.message || 'Ошибка', 'err'); return; }
+  await refreshProfile();
+  const c = data.condition || {};
+  const parts = [
+    ['engine','Двигатель'],['body','Кузов'],['suspension','Подвеска'],
+    ['gearbox','Коробка'],['electric','Электрика'],['interior','Салон'],
+    ['tires','Шины'],['oil','Масло']
+  ];
+  const html = `
+    <h3>🔍 Результат осмотра</h3>
+    <p>Списано 3 000 ₽. Точные данные:</p>
+    ${parts.map(([k, n]) => `<div class="modal-row"><span class="k">${n}</span><span class="v">${c[k] ?? '?'}%</span></div>`).join('')}
+    <button class="btn primary" style="margin-top:14px" data-close="1">Ок</button>
+  `;
+  openModal(html);
+  bindCloseButtons();
+}
+
+/* ============ НЕДВИЖИМОСТЬ ============ */
+async function collectPropertyIncome() {
+  try {
+    const { data, error } = await sb.rpc('rpc_collect_property_income');
+    if (error) return;
+    if (data?.collected > 0) {
+      toast('💰 Доход с аренды: +' + fmt(data.collected), 'ok');
+      await refreshProfile();
+    }
+  } catch (e) {}
+}
+
+async function renderProperties() {
+  const el = $('#propsContent');
+  if (!el) return;
+  el.innerHTML = '<div class="empty">Загрузка...</div>';
+  try {
+    if (propTab === 'buy-npc') await renderPropBuyNpc(el);
+    if (propTab === 'buy-players') await renderPropMarket(el);
+    if (propTab === 'my') await renderPropMy(el);
+  } catch (e) {
+    el.innerHTML = '<div class="empty">Ошибка: ' + esc(e.message) + '</div>';
+  }
+}
+
+async function renderPropBuyNpc(el) {
+  const { data } = await sb.from('property_npc_listings')
+    .select('*').eq('status', 'active')
+    .order('created_at', { ascending: false }).limit(50);
+
+  if (!data || !data.length) {
+    el.innerHTML = '<div class="empty"><div class="big">🏢</div>Пока нет объявлений от риелторов.<br><br>Подожди пару минут.</div>';
+    return;
+  }
+
+  const typeLabels = { apartment:'🏠 Квартира', house:'🏡 Дом', commercial:'🏬 Коммерция', business:'💼 Бизнес' };
+  const archLabels = {
+    calm: '😌 Спокойный', greedy: '💰 Жадный', bargainer: '🤝 Торгуется',
+    urgent: '⚡ Срочно', suspicious: '🕵️ Подозрительный'
+  };
+
+  el.innerHTML = data.map(l => `
+    <div class="car-card">
+      <img class="img" src="${esc(l.image_url || '')}" onerror="this.style.display='none'">
+      <div class="body">
+        <div class="title">${esc(l.name)}</div>
+        <div class="meta">${typeLabels[l.type] || l.type} · ${esc(l.city)}</div>
+        <div class="price">${fmt(l.price)}</div>
+        <div class="seller" style="color:var(--green);">💸 Доход: <b>${fmt(l.rent_per_hour)}/час</b></div>
+        <div class="seller">🤝 ${esc(l.npc_name)} · ${archLabels[l.npc_archetype] || l.npc_archetype}</div>
+        <button class="btn primary" data-npc-chat="${l.id}">💬 Написать риелтору</button>
+      </div>
+    </div>
+  `).join('');
+
+  $$('[data-npc-chat]').forEach(b => b.addEventListener('click', () => startPropertyChat(b.dataset.npcChat)));
+}
+
+async function startPropertyChat(npcListingId) {
+  const { data, error } = await sb.rpc('rpc_property_chat_start', { p_npc_listing_id: npcListingId });
+  if (error || !data?.ok) return toast(data?.error || error?.message || 'Ошибка', 'err');
+  openChatScreen(data.chat_id);
+}
+
+async function renderPropMy(el) {
+  const { data } = await sb.from('player_properties')
+    .select('*').eq('owner_id', currentUser.id)
+    .in('status', ['owned','listed'])
+    .order('created_at', { ascending: false });
+
+  if (!data || !data.length) {
+    el.innerHTML = '<div class="empty"><div class="big">🏢</div>У вас нет недвижимости.<br><br>Купите во вкладке «🤖 От NPC»</div>';
+    return;
+  }
+  const typeLabels = { apartment:'🏠 Квартира', house:'🏡 Дом', commercial:'🏬 Коммерция', business:'💼 Бизнес' };
+
+  el.innerHTML = data.map(pp => {
+    const isRented = pp.is_rented;
+    const isListed = pp.status === 'listed';
+    return `
+      <div class="car-row" style="border-color:${isRented ? 'rgba(46,204,113,.4)' : isListed ? 'rgba(255,206,74,.4)' : 'var(--line)'};">
+        <div class="title">${esc(pp.name)}</div>
+        <div class="row"><span>Тип</span><b>${typeLabels[pp.type] || pp.type}</b></div>
+        <div class="row"><span>Город</span><b>${esc(pp.city)}</b></div>
+        <div class="row"><span>Куплена за</span><b>${fmt(pp.buy_price)}</b></div>
+        <div class="row"><span>Рынок</span><b>${fmt(pp.market_value)}</b></div>
+        <div class="row"><span>Доход</span>
+          <b style="color:${isRented ? 'var(--green)' : 'var(--muted)'}">
+            ${isRented ? fmt(pp.rent_per_hour) + '/час' : 'Не сдаётся'}
+          </b></div>
+        ${isListed ? `<div class="row"><span>Статус</span><b style="color:var(--yellow)">На продаже</b></div>` : ''}
+
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+          ${!isListed ? `<button class="btn sm green" data-rent-toggle="${pp.id}" data-rented="${isRented ? 1 : 0}">
+            ${isRented ? '⏹ Снять с аренды' : '💸 Сдавать в аренду'}
+          </button>` : ''}
+          ${!isListed ? `<button class="btn sm ghost" data-list-prop="${pp.id}">📢 Продать игрокам</button>`
+            : `<button class="btn sm ghost" data-unlist-prop="${pp.id}">❌ Снять с продажи</button>`}
+          <button class="btn sm red" data-sell-npc="${pp.id}">💵 NPC (80%)</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  $$('[data-rent-toggle]').forEach(b => b.addEventListener('click', () => toggleRent(b.dataset.rentToggle, b.dataset.rented === '1')));
+  $$('[data-list-prop]').forEach(b => b.addEventListener('click', () => listProperty(b.dataset.listProp)));
+  $$('[data-unlist-prop]').forEach(b => b.addEventListener('click', () => unlistProperty(b.dataset.unlistProp)));
+  $$('[data-sell-npc]').forEach(b => b.addEventListener('click', () => sellPropertyNpc(b.dataset.sellNpc)));
+}
+
+async function toggleRent(ppId, isRented) {
+  if (isRented) {
+    const { data, error } = await sb.rpc('rpc_stop_rent', { p_pp_id: ppId });
+    if (error || !data?.ok) return toast(data?.error || error?.message || 'Ошибка', 'err');
+    toast('⏹ Снято с аренды', 'ok');
+    await renderProperties();
+  } else {
+    const { data: pp } = await sb.from('player_properties').select('*').eq('id', ppId).single();
+    if (!pp) return;
+    openModal(`
+      <h3>💸 Сдать в аренду</h3>
+      <p>${esc(pp.name)}</p>
+      <div class="modal-row"><span class="k">Базовый доход</span><span class="v">${fmt(pp.rent_per_hour)}/час</span></div>
+      <p style="margin-top:14px;color:var(--muted);font-size:12px;">Цена аренды за час:</p>
+      <input id="rentPrice" type="text" inputmode="numeric" value="${fmtInput(pp.rent_per_hour)}">
+      <div class="modal-actions">
+        <button class="btn ghost" data-close="1">Отмена</button>
+        <button class="btn green" id="rentConfirm">Сдать</button>
+      </div>
+    `);
+    bindCloseButtons();
+    const input = $('#rentPrice');
+    attachPriceInput(input);
+    $('#rentConfirm').onclick = async () => {
+      const val = parseNum(input.value);
+      if (!val || val <= 0) return toast('Введи цену', 'warn');
+      const { data, error } = await sb.rpc('rpc_set_rent', { p_pp_id: ppId, p_rent_per_hour: val });
+      if (error || !data?.ok) return toast(data?.error || error?.message || 'Ошибка', 'err');
+      toast('✅ Теперь сдаётся за ' + fmt(val) + '/час', 'ok');
+      closeModal();
+      await renderProperties();
+    };
+  }
+}
+
+async function listProperty(ppId) {
+  const { data: pp } = await sb.from('player_properties').select('*').eq('id', ppId).single();
+  if (!pp) return;
+  openModal(`
+    <h3>📢 Продать игрокам</h3>
+    <p>${esc(pp.name)}</p>
+    <div class="modal-row"><span class="k">Куплена за</span><span class="v">${fmt(pp.buy_price)}</span></div>
+    <div class="modal-row"><span class="k">Рынок</span><span class="v">${fmt(pp.market_value)}</span></div>
+    <p style="margin-top:14px;color:var(--muted);font-size:12px;">Цена продажи:</p>
+    <input id="propPrice" type="text" inputmode="numeric" value="${fmtInput(pp.market_value)}">
+    <div class="modal-actions">
+      <button class="btn ghost" data-close="1">Отмена</button>
+      <button class="btn green" id="propConfirm">Выставить</button>
+    </div>
+  `);
+  bindCloseButtons();
+  const input = $('#propPrice');
+  attachPriceInput(input);
+  $('#propConfirm').onclick = async () => {
+    const val = parseNum(input.value);
+    if (!val || val <= 0) return toast('Введи цену', 'warn');
+    const { data, error } = await sb.rpc('rpc_list_property', { p_pp_id: ppId, p_price: val });
+    if (error || !data?.ok) return toast(data?.error || error?.message || 'Ошибка', 'err');
+    toast('✅ Выставлено на продажу', 'ok');
+    closeModal();
+    await renderProperties();
+  };
+}
+
+async function unlistProperty(ppId) {
+  if (!confirm('Снять с продажи?')) return;
+  const { data, error } = await sb.rpc('rpc_unlist_property', { p_pp_id: ppId });
+  if (error || !data?.ok) return toast(data?.error || error?.message || 'Ошибка', 'err');
+  toast('✅ Снято с продажи', 'ok');
+  await renderProperties();
+}
+
+async function sellPropertyNpc(ppId) {
+  if (!confirm('Продать NPC за 80% от рынка?')) return;
+  const { data, error } = await sb.rpc('rpc_sell_property_npc', { p_pp_id: ppId });
+  if (error || !data?.ok) return toast(data?.error || error?.message || 'Ошибка', 'err');
+  toast('💰 Продано за ' + fmt(data.price), 'ok');
+  await refreshProfile();
+  await renderProperties();
+}
+
+async function renderPropMarket(el) {
+  const { data } = await sb.from('property_listings')
+    .select('*, property:player_properties(*), seller:profiles(username)')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false });
+
+  if (!data || !data.length) {
+    el.innerHTML = '<div class="empty"><div class="big">👥</div>Пока никто из игроков не продаёт недвижимость</div>';
+    return;
+  }
+
+  el.innerHTML = data.map(l => {
+    const prop = l.property || {};
+    const seller = l.seller?.username || 'Игрок';
+    const isMine = l.seller_id === currentUser.id;
+    const canBuy = profile.balance >= l.price && !isMine;
+    return `
+      <div class="car-card" ${isMine ? 'style="border-color:rgba(255,206,74,.5)"' : ''}>
+        <div class="body">
+          <div class="title">${esc(prop.name || 'Объект')}</div>
+          <div class="meta">${esc(prop.city || '')} · от ${esc(seller)}</div>
+          <div class="price">${fmt(l.price)}</div>
+          ${prop.rent_per_hour ? `<div class="seller" style="color:var(--green);">💸 Доход: ${fmt(prop.rent_per_hour)}/час</div>` : ''}
+          ${isMine ? `<div class="warn-box" style="margin-top:10px;">⭐ Это твоё объявление</div>` :
+            `<button class="btn ${canBuy ? 'green' : 'ghost'}" data-buy-listing="${l.id}" ${canBuy ? '' : 'disabled'} style="margin-top:10px;">
+              ${canBuy ? '🛒 Купить за ' + fmt(l.price) : 'Недостаточно денег'}
+            </button>`}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  $$('[data-buy-listing]').forEach(b => b.addEventListener('click', () => buyPropertyFromPlayer(b.dataset.buyListing)));
+}
+
+async function buyPropertyFromPlayer(listingId) {
+  if (!confirm('Купить этот объект у игрока?')) return;
+  const { data, error } = await sb.rpc('rpc_buy_property_from_player', { p_listing_id: listingId });
+  if (error || !data?.ok) return toast(data?.error || error?.message || 'Ошибка', 'err');
+  toast('✅ Куплено!', 'ok');
+  await refreshProfile();
+  await renderProperties();
+}
+
+/* ============ ЧАТЫ ============ */
+async function renderChats() {
+  const el = $('#chatsList');
+  const { data } = await sb.from('chats')
+    .select('*')
+    .or('player_id.eq.' + currentUser.id + ',opponent_id.eq.' + currentUser.id)
+    .order('last_message_at', { ascending: false });
+
+  if (!data || !data.length) {
+    el.innerHTML = '<div class="empty"><div class="big">💬</div>Нет активных чатов.<br><br>Открой объявление и нажми «Написать»</div>';
+    return;
+  }
+
+  const oppIds = data.map(c => c.player_id === currentUser.id ? c.opponent_id : c.player_id).filter(Boolean);
+  const uniq = [...new Set(oppIds)];
+  let namesMap = {};
+  if (uniq.length) {
+    const { data: profiles } = await sb.from('profiles').select('id, username').in('id', uniq);
+    (profiles || []).forEach(p => namesMap[p.id] = p.username);
+  }
+
+  el.innerHTML = data.map(c => {
+    const isPlayer = c.chat_type === 'player';
+    const isProperty = c.chat_type === 'property';
+    const oppId = c.player_id === currentUser.id ? c.opponent_id : c.player_id;
+    const displayName = isPlayer ? (namesMap[oppId] || 'Игрок') : c.npc_name;
+    let badge = '';
+    if (isPlayer) badge = '<div class="chat-badge player">👤 Игрок</div>';
+    else if (isProperty) badge = '<div class="chat-badge property">🏢 Недвижка</div>';
+    else if (c.chat_type === 'sell') badge = '<div class="chat-badge sell">Продажа</div>';
+    if (c.status === 'deal') badge = '<div class="chat-badge deal">Сделка</div>';
+
+    const avatar = isPlayer ? '👤'
+      : isProperty ? '🏢'
+      : c.npc_archetype === 'urgent' ? '⚡'
+      : c.npc_archetype === 'greedy' ? '💰'
+      : c.npc_archetype === 'suspicious' ? '🕵️' : '🤝';
+
+    return `<div class="chat-item" data-chat="${c.id}">
+      <div class="chat-avatar">${avatar}</div>
+      <div class="chat-meta">
+        <div class="chat-name">${esc(displayName)}</div>
+        <div class="chat-last">${esc(c.last_message || 'Диалог начат')}</div>
+      </div>
+      ${badge}
+    </div>`;
+  }).join('');
+
+  $$('[data-chat]').forEach(b => b.addEventListener('click', () => openChatScreen(b.dataset.chat)));
+}
+
+async function startChatWithListing(listingId) {
+  const listing = listingsCache.find(l => l.id === listingId) ||
+    (await sb.from('listings').select('*').eq('id', listingId).maybeSingle()).data;
+  if (!listing) return toast('Объявление не найдено', 'err');
+  if (listing.seller_id === currentUser.id) return toast('Нельзя написать самому себе', 'warn');
+
+  if (listing.is_npc || !listing.seller_id) {
+    const { data: existing } = await sb.from('chats').select('*').eq('player_id', currentUser.id).eq('listing_id', listingId).maybeSingle();
+    if (existing) { closeModal(); return openChatScreen(existing.id); }
+
+    const { data: chat, error } = await sb.from('chats').insert({
+      player_id: currentUser.id, listing_id: listingId,
+      npc_name: listing.npc_name || 'Продавец',
+      npc_archetype: listing.npc_archetype || 'calm',
+      last_message: 'Диалог начат', status: 'active', chat_type: 'buy',
+      last_message_at: new Date().toISOString()
+    }).select().single();
+    if (error) return toast(error.message, 'err');
+    closeModal();
+    return openChatScreen(chat.id);
+  }
+
+  const { data, error } = await sb.rpc('rpc_start_player_chat', { p_listing_id: listingId });
+  if (error || !data?.ok) return toast(data?.error || error?.message || 'Ошибка', 'err');
+  closeModal();
+  openChatScreen(data.chat_id);
+}
+
+async function openChatScreen(chatId) {
+  const { data: chat } = await sb.from('chats').select('*').eq('id', chatId).maybeSingle();
+  if (!chat) { toast('Чат не найден', 'err'); return; }
+
+  let opponentName = chat.npc_name;
+  if (chat.chat_type === 'player') {
+    const oppId = chat.player_id === currentUser.id ? chat.opponent_id : chat.player_id;
+    if (oppId) {
+      const { data: p } = await sb.from('profiles').select('username').eq('id', oppId).maybeSingle();
+      if (p) opponentName = p.username;
+    }
+  }
+
+  let listing = null, car = null, prop = null;
+  if (chat.listing_id) {
+    const { data } = await sb.from('listings').select('*').eq('id', chat.listing_id).maybeSingle();
+    listing = data;
+  }
+  if (chat.my_car_id) {
+    const { data } = await sb.from('player_cars').select('*').eq('id', chat.my_car_id).maybeSingle();
+    car = data;
+  }
+  if (chat.property_npc_listing_id) {
+    const { data } = await sb.from('property_npc_listings').select('*').eq('id', chat.property_npc_listing_id).maybeSingle();
+    prop = data;
+  }
+
+  const { data: msgs } = await sb.from('chat_messages').select('*').eq('chat_id', chatId).order('created_at');
+
+  const old = document.getElementById('chatScreen');
+  if (old) { if (old._unsubscribe) old._unsubscribe(); old.remove(); }
+
+  const subtitle = listing
+    ? esc(listing.brand + ' ' + listing.model + ', ' + listing.year)
+    : car ? 'Моя продажа: ' + esc(car.brand + ' ' + car.model + ', ' + car.year)
+    : prop ? esc(prop.name + ' · ' + prop.city) : '';
+
+  await refreshProfile();
+
+  const screen = document.createElement('div');
+  screen.className = 'chat-screen open';
+  screen.id = 'chatScreen';
+  screen.innerHTML = `
+    <header>
+      <button class="back" id="chatBack">‹</button>
+      <div class="info">
+        <div class="n">${esc(opponentName)}</div>
+        <div class="s">${subtitle}</div>
+      </div>
+      <div class="wallet" id="chatWallet">💰 ${fmt(profile.balance)}</div>
+    </header>
+    <div class="chat-msgs" id="chatMsgs">
+      ${(msgs || []).map(m => {
+        const isMine = chat.chat_type === 'player'
+          ? m.from_user_id === currentUser.id
+          : m.sender === 'player';
+        return `<div class="msg ${isMine ? 'player' : 'npc'}">${esc(m.text)}</div>`;
+      }).join('')}
+    </div>
+    <div class="chat-action-bar" id="chatActionBar"></div>
+    <div class="chat-quick" id="chatQuick"></div>
+    <div class="chat-input-bar">
+      <input id="chatInput" placeholder="Написать сообщение..." autocomplete="off">
+      <button class="send" id="chatSend">➤</button>
+    </div>
+  `;
+  document.body.appendChild(screen);
+
+  const msgsEl = $('#chatMsgs');
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  $('#chatBack').onclick = () => {
+    if (screen._unsubscribe) screen._unsubscribe();
+    screen.remove();
+    if (currentScreen === 'chats') renderChats();
+  };
+
+  $('#chatSend').onclick = () => sendChatMessage(chat.id, screen);
+  $('#chatInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendChatMessage(chat.id, screen);
+  });
+
+  updateChatBars(chat, listing, car, msgs, screen, prop);
+
+  let lastMsgCount = (msgs || []).length;
+  const pollInterval = setInterval(async () => {
+    try {
+      const { data: fresh } = await sb.from('chat_messages')
+        .select('*').eq('chat_id', chatId)
+        .order('created_at', { ascending: true });
+
+      if (!fresh) return;
+
+      if (fresh.length > lastMsgCount) {
+        const newMsgs = fresh.slice(lastMsgCount);
+        const el = screen.querySelector('#chatMsgs');
+        if (el) {
+          newMsgs.forEach(m => {
+            const isMine = chat.chat_type === 'player'
+              ? m.from_user_id === currentUser.id
+              : m.sender === 'player';
+            if (isMine) return;
+            if (chat.chat_type !== 'player' && m.sender === 'npc') return;
+            el.insertAdjacentHTML('beforeend', `<div class="msg npc">${esc(m.text)}</div>`);
+          });
+          el.scrollTop = el.scrollHeight;
+        }
+        lastMsgCount = fresh.length;
+        sb.rpc('rpc_mark_chat_read', { p_chat_id: chatId });
+      }
+
+      const { data: chat2 } = await sb.from('chats').select('*').eq('id', chatId).maybeSingle();
+      if (chat2 && chat2.deal_stage !== chat.deal_stage) {
+        Object.assign(chat, chat2);
+        let l2 = null, prop2 = null;
+        if (chat2.listing_id) {
+          const { data } = await sb.from('listings').select('*').eq('id', chat2.listing_id).maybeSingle();
+          l2 = data;
+        }
+        if (chat2.property_npc_listing_id) {
+          const { data } = await sb.from('property_npc_listings').select('*').eq('id', chat2.property_npc_listing_id).maybeSingle();
+          prop2 = data;
+        }
+        updateChatBars(chat2, l2, car, fresh, screen, prop2);
+      }
+
+      const { data: fresh_profile } = await sb.from('profiles').select('balance').eq('id', currentUser.id).maybeSingle();
+      if (fresh_profile) {
+        profile.balance = fresh_profile.balance;
+        const w = screen.querySelector('#chatWallet');
+        if (w) w.textContent = '💰 ' + fmt(profile.balance);
+        $('#pBalance').textContent = fmt(profile.balance);
+      }
+    } catch (e) {}
+  }, 2000);
+
+  screen._unsubscribe = () => clearInterval(pollInterval);
+  if (chat.chat_type === 'player') sb.rpc('rpc_mark_chat_read', { p_chat_id: chatId });
+}
+
+function updateChatBars(chat, listing, car, msgs, screen, prop) {
+  const bar = screen.querySelector('#chatActionBar');
+  const quick = screen.querySelector('#chatQuick');
+  const wallet = screen.querySelector('#chatWallet');
+  if (wallet && profile) wallet.textContent = '💰 ' + fmt(profile.balance);
+  if (!bar || !quick) return;
+
+  bar.innerHTML = '';
+  quick.innerHTML = '';
+
+  const iAmBuyer = chat.player_id === currentUser.id;
+  const iAmSeller = chat.opponent_id === currentUser.id;
+
+  /* ====== ЧАТ ПО НЕДВИЖИМОСТИ ====== */
+  if (chat.chat_type === 'property') {
+    const stage = chat.deal_stage;
+    const price = chat.property_deal_price || chat.last_price;
+
+    if (stage === 'traveling') {
+      bar.innerHTML = `<button style="background:var(--accent);" onclick="goTo('trip')">🏠 Вы в пути на просмотр...</button>`;
+      return;
+    }
+    if (stage === 'completed') {
+      bar.innerHTML = `<button style="background:var(--green);cursor:default;">✅ Куплено</button>`;
+      return;
+    }
+
+    if (chat.status === 'deal' && price) {
+      bar.innerHTML = `<button id="propGoBtn">🏠 Еду на просмотр — ${fmt(price)}</button>`;
+      bar.querySelector('#propGoBtn').onclick = async () => {
+        const { data, error } = await sb.rpc('rpc_property_start_trip', { p_chat_id: chat.id });
+        if (error || !data?.ok) return toast(data?.error || error?.message || 'Ошибка', 'err');
+        toast('🏠 Поехали! ' + esc(data.time) + ', ' + esc(data.city), 'ok');
+        const chatScreen = document.getElementById('chatScreen');
+        if (chatScreen) { if (chatScreen._unsubscribe) chatScreen._unsubscribe(); chatScreen.remove(); }
+        await refreshProfile();
+        await goTo('trip');
+      };
+    }
+
+    let propOptions = [];
+    if (chat.status === 'active') {
+      propOptions = [
+        { text: 'Ещё продаётся?', cls: '' },
+        { text: 'Сколько крайняя цена?', cls: 'yellow' },
+        { text: 'Торг возможен?', cls: 'yellow' },
+        { text: 'Готов купить', cls: 'green' }
+      ];
+    }
+    renderQuickButtons(quick, propOptions, chat, screen);
+    return;
+  }
+
+  /* ====== ЧАТ МЕЖДУ ИГРОКАМИ ====== */
+  if (chat.chat_type === 'player') {
+    const stage = chat.deal_stage;
+    const price = chat.deal_price;
+
+    if (iAmBuyer && stage === 'buyer_accepted') {
+      bar.innerHTML = `<button style="background:var(--yellow);color:#000;cursor:default;">⏳ Ждём подтверждения продавца...</button>`;
+      return;
+    }
+    if (iAmBuyer && stage === 'seller_confirmed') {
+      bar.innerHTML = `<button id="playerGoBtn">🚗 Поехали за машиной — ${fmt(price)}</button>`;
+      bar.querySelector('#playerGoBtn').onclick = () => playerStartTrip(chat);
+      return;
+    }
+    if (iAmBuyer && stage === 'traveling') {
+      bar.innerHTML = `<button style="background:var(--accent);" onclick="goTo('trip')">🚗 Вы в пути... Открыть поездку</button>`;
+      return;
+    }
+    if (iAmBuyer && stage === 'completed') {
+      bar.innerHTML = `<button style="background:var(--green);cursor:default;">✅ Сделка завершена</button>`;
+      return;
+    }
+    if (iAmSeller && stage === 'buyer_accepted') {
+      bar.innerHTML = `<button id="sellerConfirmBtn">✅ Подтвердить продажу за ${fmt(price)}</button>`;
+      bar.querySelector('#sellerConfirmBtn').onclick = () => sellerConfirm(chat);
+      return;
+    }
+    if (iAmSeller && stage === 'seller_confirmed') {
+      bar.innerHTML = `<button style="background:var(--yellow);color:#000;cursor:default;">⏳ Ждём покупателя...</button>`;
+      return;
+    }
+    if (iAmSeller && stage === 'traveling') {
+      bar.innerHTML = `<button style="background:var(--accent);" onclick="goTo('trip')">🚗 Покупатель в пути...</button>`;
+      return;
+    }
+    if (iAmSeller && stage === 'completed') {
+      bar.innerHTML = `<button style="background:var(--green);cursor:default;">✅ Продано за ${fmt(price)}</button>`;
+      return;
+    }
+
+    if (iAmBuyer) {
+      const sorted = (msgs || []).slice().sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
+      const lastMsg = sorted[sorted.length - 1];
+      if (lastMsg && lastMsg.from_user_id && lastMsg.from_user_id !== currentUser.id) {
+        const match = lastMsg.text.match(/\d{4,}/);
+        const priceFromMsg = match ? parseInt(match[0], 10) : null;
+        if (priceFromMsg && priceFromMsg >= 1000) {
+          bar.innerHTML = `<button id="buyerAcceptBtn" style="background:var(--green);">✅ Беру за ${fmt(priceFromMsg)}</button>`;
+          bar.querySelector('#buyerAcceptBtn').onclick = async () => {
+            const { data, error } = await sb.rpc('rpc_buyer_accept', { p_chat_id: chat.id, p_price: priceFromMsg });
+            if (error || !data?.ok) { toast(data?.error || error?.message || 'Ошибка', 'err'); return; }
+            toast('✅ Цена принята. Ждём продавца', 'ok');
+          };
+          return;
+        }
+      }
+    }
+
+    let options = [];
+    if (iAmBuyer) {
+      options = [
+        { text: 'Ещё продаётся?', cls: '' },
+        { text: 'Какая крайняя цена?', cls: 'yellow' },
+        { text: 'Можно дешевле?', cls: 'yellow' },
+        { text: 'Когда можно посмотреть?', cls: '' }
+      ];
+    } else if (iAmSeller) {
+      options = [
+        { text: 'Да, продаётся', cls: 'green' },
+        { text: 'Какая ваша цена?', cls: 'yellow' },
+        { text: 'Могу уступить немного', cls: 'yellow' },
+        { text: 'Жду вас', cls: 'green' }
+      ];
+    }
+    renderQuickButtons(quick, options, chat, screen);
+    return;
+  }
+
+  /* ====== ЧАТ С NPC (авто) ====== */
+  const alreadyStarted = chat.status !== 'deal';
+  if (chat.chat_type === 'buy' && chat.status === 'deal' && chat.last_price && !alreadyStarted) {
+    bar.innerHTML = `<button id="goTripBtn">🚗 Еду за машиной — ${fmt(chat.last_price)}</button>`;
+    bar.querySelector('#goTripBtn').onclick = () => openTripSetup(chat);
+  } else if (chat.chat_type === 'sell' && chat.status === 'deal' && chat.last_price && !alreadyStarted) {
+    bar.innerHTML = `<button id="sellTripBtn">✅ Подтвердить — покупатель выезжает</button>`;
+    bar.querySelector('#sellTripBtn').onclick = () => startSellTrip(chat);
+  }
+
+  let options = [];
+  if (chat.chat_type === 'buy') {
+    if (chat.status === 'active') {
+      options = [
+        { text: 'Ещё продаётся?', cls: '' },
+        { text: 'Какая крайняя цена?', cls: 'yellow' },
+        { text: 'Можно дешевле?', cls: 'yellow' },
+        { text: 'Готов забрать сегодня', cls: 'green' }
+      ];
+    } else if (chat.status === 'deal') {
+      options = [
+        { text: 'Когда могу подъехать?', cls: 'green' },
+        { text: 'Во сколько удобно?', cls: '' },
+        { text: 'Приеду через час', cls: 'green' }
+      ];
+    }
+  } else if (chat.chat_type === 'sell') {
+    if (chat.status === 'active') {
+      options = [
+        { text: 'Да, продаётся', cls: 'green' },
+        { text: 'Какая ваша цена?', cls: 'yellow' },
+        { text: 'Могу уступить немного', cls: 'yellow' }
+      ];
+    } else if (chat.status === 'deal') {
+      options = [
+        { text: 'Когда подъедете?', cls: '' },
+        { text: 'Жду вас', cls: 'green' }
+      ];
+    }
+  }
+  renderQuickButtons(quick, options, chat, screen);
+}
+
+function renderQuickButtons(quick, options, chat, screen) {
+  if (!options.length) return;
+  quick.innerHTML = options.map((o, i) => `<button data-quick="${i}" class="${o.cls}">${esc(o.text)}</button>`).join('');
+  quick.querySelectorAll('[data-quick]').forEach(btn => {
+    btn.onclick = () => {
+      const idx = parseInt(btn.dataset.quick, 10);
+      const input = screen.querySelector('#chatInput');
+      input.value = options[idx].text;
+      sendChatMessage(chat.id, screen);
+    };
+  });
+}
+
+async function playerStartTrip(chat) {
+  const { data, error } = await sb.rpc('rpc_player_start_trip', { p_chat_id: chat.id });
+  if (error || !data?.ok) { toast(data?.error || error?.message || 'Ошибка', 'err'); return; }
+  toast('🚗 Поехали! ' + esc(data.time) + ', ' + esc(data.city), 'ok');
+  const chatScreen = document.getElementById('chatScreen');
+  if (chatScreen) { if (chatScreen._unsubscribe) chatScreen._unsubscribe(); chatScreen.remove(); }
+  await refreshProfile();
+  await goTo('trip');
+}
+
+async function sellerConfirm(chat) {
+  const { data, error } = await sb.rpc('rpc_seller_confirm', { p_chat_id: chat.id });
+  if (error || !data?.ok) { toast(data?.error || error?.message || 'Ошибка', 'err'); return; }
+  toast('✅ Подтверждено. Ждём покупателя', 'ok');
+}
+
+async function sendChatMessage(chatId, screen) {
+  const input = screen.querySelector('#chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  const msgsEl = screen.querySelector('#chatMsgs');
+  msgsEl.insertAdjacentHTML('beforeend', `<div class="msg player">${esc(text)}</div>`);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  const { data: chat } = await sb.from('chats').select('*').eq('id', chatId).maybeSingle();
+  if (!chat) return;
+
+  if (chat.chat_type === 'player') {
+    const { error } = await sb.rpc('rpc_player_chat_send', { p_chat_id: chatId, p_text: text });
+    if (error) { toast(error.message, 'err'); return; }
+
+    const { data: dealCheck } = await sb.rpc('rpc_check_deal_from_text', { p_chat_id: chatId, p_text: text });
+    if (dealCheck?.ok) toast('✅ Сделка зафиксирована за ' + fmt(dealCheck.price), 'ok');
+
+    setTimeout(async () => {
+      const { data: chat2 } = await sb.from('chats').select('*').eq('id', chatId).maybeSingle();
+      const { data: msgs2 } = await sb.from('chat_messages').select('*').eq('chat_id', chatId).order('created_at');
+      if (chat2) {
+        const { data: l2 } = chat2.listing_id ? await sb.from('listings').select('*').eq('id', chat2.listing_id).maybeSingle() : { data: null };
+        updateChatBars(chat2, l2, null, msgs2 || [], screen, null);
+      }
+    }, 500);
+    return;
+  }
+
+  if (chat.chat_type === 'property') {
+    const { data, error } = await sb.rpc('rpc_property_chat_send', { p_chat_id: chatId, p_text: text });
+    if (error) { toast(error.message, 'err'); return; }
+
+    const typing = document.createElement('div');
+    typing.className = 'msg npc';
+    typing.textContent = '...';
+    msgsEl.appendChild(typing);
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+
+    setTimeout(async () => {
+      typing.remove();
+      msgsEl.insertAdjacentHTML('beforeend', `<div class="msg npc">${esc(data.npc_reply)}</div>`);
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+
+      const { data: chat2 } = await sb.from('chats').select('*').eq('id', chatId).maybeSingle();
+      const { data: prop2 } = chat2?.property_npc_listing_id
+        ? await sb.from('property_npc_listings').select('*').eq('id', chat2.property_npc_listing_id).maybeSingle()
+        : { data: null };
+      const { data: msgs2 } = await sb.from('chat_messages').select('*').eq('chat_id', chatId).order('created_at');
+      if (chat2) updateChatBars(chat2, null, null, msgs2 || [], screen, prop2);
+      await refreshProfile();
+    }, 900);
+    return;
+  }
+
+  const { data, error } = await sb.rpc('rpc_chat_send', { p_chat_id: chatId, p_text: text });
+  if (error) { toast(error.message, 'err'); return; }
+
+  const typing = document.createElement('div');
+  typing.className = 'msg npc';
+  typing.textContent = '...';
+  msgsEl.appendChild(typing);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  setTimeout(async () => {
+    typing.remove();
+    msgsEl.insertAdjacentHTML('beforeend', `<div class="msg npc">${esc(data.npc_reply)}</div>`);
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+
+    const { data: chat2 } = await sb.from('chats').select('*').eq('id', chatId).maybeSingle();
+    if (!chat2) return;
+    const { data: l2 } = chat2.listing_id ? await sb.from('listings').select('*').eq('id', chat2.listing_id).maybeSingle() : { data: null };
+    const { data: msgs2 } = await sb.from('chat_messages').select('*').eq('chat_id', chatId).order('created_at');
+    updateChatBars(chat2, l2, null, msgs2 || [], screen, null);
+    await refreshProfile();
+    if (data.deal) toast('Договорились! Жми кнопку внизу', 'ok');
+  }, 900);
+}
+
+/* ============ ПОЕЗДКА ============ */
+async function renderTripScreen() {
+  // ЗАЩИТА: всегда убиваем предыдущий интервал перед созданием нового
+  if (_tripInterval) { clearInterval(_tripInterval); _tripInterval = null; }
+
+  const el = $('#tripActive');
+  const { data: myTrips } = await sb.from('trips')
+    .select('*').eq('player_id', currentUser.id)
+    .eq('status', 'traveling').order('created_at', { ascending: false });
+
+  const { data: myChats } = await sb.from('chats')
+    .select('*').eq('opponent_id', currentUser.id).eq('deal_stage', 'traveling');
+
+  if ((!myTrips || !myTrips.length) && (!myChats || !myChats.length)) {
+    el.innerHTML = '<div class="empty"><div class="big">🚕</div>Нет активных поездок.<br><br>Договорись в чате и нажми «Поехали»</div>';
+    return;
+  }
+
+  if (myTrips && myTrips.length) {
+    const trip = myTrips[0];
+    let listing = null, car = null, prop = null;
+    if (trip.listing_id) {
+      const { data } = await sb.from('listings').select('*').eq('id', trip.listing_id).maybeSingle();
+      listing = data;
+    }
+    if (trip.own_car_id) {
+      const { data } = await sb.from('player_cars').select('*').eq('id', trip.own_car_id).maybeSingle();
+      car = data;
+    }
+    if (trip.property_id) {
+      const { data } = await sb.from('player_properties').select('*').eq('id', trip.property_id).maybeSingle();
+      prop = data;
+    }
+
+    const isSell = trip.trip_type === 'sell';
+    const isProperty = trip.trip_type === 'property';
+    const title = isSell ? 'Покупатель едет ко мне...' 
+                : isProperty ? '🏠 Еду на просмотр недвижимости...'
+                : 'Еду за машиной...';
+    const carInfo = isSell
+      ? (car ? esc(car.brand + ' ' + car.model + ', ' + car.year) : '—')
+      : isProperty
+        ? (prop ? esc(prop.name + ' · ' + prop.city) : 'Просмотр недвижимости')
+        : (listing ? esc(listing.brand + ' ' + listing.model + ', ' + listing.year) : '—');
+    const price = isSell ? trip.agreed_price : (listing ? listing.price : trip.agreed_price);
+
+    el.innerHTML = `
+      <div class="trip-card">
+        <div class="title" style="font-weight:800;font-size:15px;margin-bottom:8px;">${title}</div>
+        <div class="trip-info">
+          🏠 <b>${carInfo}</b><br>
+          📍 ${esc(trip.city)}<br>
+          ⏰ ${esc(trip.meet_time)}<br>
+          💰 Цена: <b>${fmt(price || 0)}</b>
+        </div>
+        <div class="trip-progress"><div id="tripProgress"></div></div>
+        <div id="tripStatus" style="text-align:center;color:var(--muted);font-size:13px;">Осталось...</div>
+      </div>
+    `;
+
+    const start = new Date(trip.created_at).getTime();
+    const end = new Date(trip.arrives_at).getTime();
+    const total = Math.max(1, end - start);
+
+    _tripInterval = setInterval(async () => {
+      const now = Date.now();
+      const pct = Math.min(100, ((now - start) / total) * 100);
+      const elProg = document.getElementById('tripProgress');
+      const elStatus = document.getElementById('tripStatus');
+      if (!elProg || !elStatus) { clearInterval(_tripInterval); _tripInterval = null; return; }
+      elProg.style.width = pct + '%';
+
+      const secondsLeft = Math.max(0, Math.ceil((end - now) / 1000));
+      elStatus.textContent = secondsLeft > 0
+        ? `В пути... ${secondsLeft} сек`
+        : (isSell ? 'Покупатель приехал!' : isProperty ? 'Прибыл! Осматриваю...' : 'Прибыл!');
+
+      if (now >= end) {
+        // ЗАЩИТА: убиваем интервал и блокируем повторный вызов finish
+        clearInterval(_tripInterval);
+        _tripInterval = null;
+        if (_tripFinishing) return;
+        _tripFinishing = true;
+
+        let rpc;
+        try {
+          if (isSell) {
+            rpc = await sb.rpc('rpc_finish_sell_trip', { p_trip_id: trip.id });
+          } else if (isProperty) {
+            rpc = await sb.rpc('rpc_property_finish_trip', { p_trip_id: trip.id });
+          } else {
+            const { data: chatCheck } = await sb.from('chats')
+              .select('*').eq('listing_id', trip.listing_id)
+              .eq('player_id', currentUser.id)
+              .eq('deal_stage', 'traveling')
+              .maybeSingle();
+
+            if (chatCheck?.chat_type === 'player') {
+              rpc = await sb.rpc('rpc_player_finish_trip', { p_trip_id: trip.id });
+            } else {
+              rpc = await sb.rpc('rpc_finish_trip', { p_trip_id: trip.id });
+            }
+          }
+        } catch (e) {
+          rpc = { error: e };
+        }
+
+        if (!rpc || rpc.error || !rpc.data?.ok) {
+          const errMsg = rpc?.data?.error || rpc?.error?.message || 'Ошибка';
+          toast(errMsg, 'err');
+          elStatus.textContent = errMsg;
+          _tripFinishing = false;
+          if (rpc?.data?.cancelled) setTimeout(() => goTo('home'), 2000);
+          return;
+        }
+
+        if (isSell) toast('✅ Продано! Прибыль: ' + fmt(rpc.data.profit || 0), 'ok');
+        else if (isProperty) toast('🏠 Куплено!', 'ok');
+        else toast('✅ Машина в гараже!', 'ok');
+        await refreshProfile();
+        _tripFinishing = false;
+        await goTo(isSell ? 'home' : isProperty ? 'properties' : 'garage');
+      }
+    }, 500);
+    return;
+  }
+
+  if (myChats && myChats.length) {
+    const chat = myChats[0];
+    const { data: listing } = await sb.from('listings').select('*').eq('id', chat.listing_id).maybeSingle();
+    const { data: buyer } = await sb.from('profiles').select('username').eq('id', chat.player_id).maybeSingle();
+
+    el.innerHTML = `
+      <div class="trip-card">
+        <div class="title" style="font-weight:800;font-size:15px;margin-bottom:8px;">🚗 Покупатель едет к вам...</div>
+        <div class="trip-info">
+          👤 Покупатель: <b>${esc(buyer?.username || 'Игрок')}</b><br>
+          🚗 Машина: <b>${listing ? esc(listing.brand + ' ' + listing.model + ', ' + listing.year) : '—'}</b><br>
+          💰 Цена сделки: <b>${fmt(chat.deal_price || 0)}</b>
+        </div>
+        <div style="text-align:center;color:var(--muted);font-size:13px;margin-top:12px;">
+          ⏳ Ожидаем прибытия покупателя...
+        </div>
+      </div>
+    `;
+
+    _tripInterval = setInterval(async () => {
+      const { data: c2 } = await sb.from('chats').select('*').eq('id', chat.id).maybeSingle();
+      if (c2?.deal_stage === 'completed') {
+        clearInterval(_tripInterval);
+        _tripInterval = null;
+        toast('✅ Покупатель забрал машину! Деньги зачислены', 'ok');
+        await refreshProfile();
+        await goTo('home');
+      }
+    }, 2000);
+    return;
+  }
+}
+
+async function openTripSetup(chat) {
+  const { data: listing } = await sb.from('listings').select('*').eq('id', chat.listing_id).maybeSingle();
+  const { data: myCars } = await sb.from('player_cars')
+    .select('*').eq('owner_id', currentUser.id).eq('status', 'in_garage');
+  const hasCar = (myCars || []).length > 0;
+
+  const html = `
+    <h3>🚗 Поездка за машиной</h3>
+    <p>${esc(listing?.brand || '')} ${esc(listing?.model || '')}, ${listing?.year || ''}</p>
+    <div class="modal-row"><span class="k">Город</span><span class="v">${esc(listing?.city || '')}</span></div>
+    <div class="modal-row"><span class="k">Цена</span><span class="v" style="color:var(--accent)">${fmt(chat.last_price)}</span></div>
+    <p style="margin-top:16px;color:var(--muted);font-size:12px;">Как поедешь?</p>
+    <button class="btn yellow" id="tripTaxi">🚕 Такси — 300 ₽</button>
+    ${hasCar ? `<button class="btn ghost" id="tripOwn" style="margin-top:8px;">🚗 На своей машине</button>` : ''}
+    <button class="btn ghost" style="margin-top:8px;" data-close="1">Отмена</button>
+  `;
+  openModal(html);
+  bindCloseButtons();
+  $('#tripTaxi')?.addEventListener('click', () => confirmTrip(chat.id, 'taxi', null));
+  $('#tripOwn')?.addEventListener('click', () => chooseOwnCar(chat, myCars));
+}
+
+async function chooseOwnCar(chat, cars) {
+  const html = `
+    <h3>🚗 Выбери машину</h3>
+    <p>На какой поедешь?</p>
+    ${cars.map(c => `<button class="btn ghost" style="margin-bottom:8px;text-align:left;" data-car="${c.id}">${esc(c.brand)} ${esc(c.model)}, ${c.year}</button>`).join('')}
+    <button class="btn ghost" data-close="1">Отмена</button>
+  `;
+  openModal(html);
+  bindCloseButtons();
+  $$('[data-car]').forEach(b => { b.onclick = () => confirmTrip(chat.id, 'own_car', b.dataset.car); });
+}
+
+async function confirmTrip(chatId, transport, ownCarId) {
+  const { data, error } = await sb.rpc('rpc_start_trip_from_chat', { p_chat_id: chatId, p_transport: transport, p_own_car_id: ownCarId });
+  if (error || !data?.ok) { toast(data?.error || error?.message || 'Ошибка', 'err'); return; }
+  await sb.from('chats').update({ status: 'archived' }).eq('id', chatId);
+  toast('Поехал! ' + esc(data.time) + ', ' + esc(data.city), 'ok');
+  closeModal();
+  const chatScreen = document.getElementById('chatScreen');
+  if (chatScreen) { if (chatScreen._unsubscribe) chatScreen._unsubscribe(); chatScreen.remove(); }
+  await refreshProfile();
+  await goTo('trip');
+}
+
+async function startSellTrip(chat) {
+  const { data, error } = await sb.rpc('rpc_start_sell_trip', { p_chat_id: chat.id });
+  if (error || !data?.ok) { toast(data?.error || error?.message || 'Ошибка', 'err'); return; }
+  toast('Покупатель выехал! ' + esc(data.time), 'ok');
+  const chatScreen = document.getElementById('chatScreen');
+  if (chatScreen) { if (chatScreen._unsubscribe) chatScreen._unsubscribe(); chatScreen.remove(); }
+  await refreshProfile();
+  await goTo('trip');
+}
+
+/* ============ ГАРАЖ ============ */
+async function renderGarage() {
+  const { data: inGarage } = await sb.from('player_cars').select('*').eq('owner_id', currentUser.id).eq('status', 'in_garage').order('created_at', { ascending: false });
+  const { data: onSale } = await sb.from('player_cars').select('*').eq('owner_id', currentUser.id).eq('status', 'listed').order('created_at', { ascending: false });
+  garageCache = inGarage || [];
+  const saleCache = onSale || [];
+
+  const el = $('#garage');
+  const cap = profile.garage_capacity || 2;
+
+  const renderSaleSection = () => saleCache.length ? `
+    <div class="section-title" style="margin-top:20px;">💰 На продаже (${saleCache.length})</div>
+    ${saleCache.map(c => `
+      <div class="car-row" style="border-color:rgba(255,206,74,.4);">
+        <div class="title">${esc(c.brand)} ${esc(c.model)}, ${c.year}</div>
+        <div class="row"><span>Цена</span><b style="color:var(--yellow)">${fmt(c.market_value)}</b></div>
+        <div class="row"><span>Кому</span><b>${c.sale_type === 'players' ? '👥 Игроки' : '🤖 NPC'}</b></div>
+        <button class="btn sm red" data-unlist="${c.id}" style="margin-top:8px;">❌ Убрать с продажи</button>
+      </div>
+    `).join('')}
+  ` : '';
+
+  if (!garageCache.length) {
+    el.innerHTML = `
+      <div class="car-row" style="background:linear-gradient(135deg,rgba(79,140,255,.1),transparent);">
+        <div class="row"><span>Гараж</span><b>0 / ${cap}</b></div>
+        ${saleCache.length ? `<div class="row"><span>На продаже</span><b style="color:var(--yellow)">${saleCache.length} шт</b></div>` : ''}
+        <button class="btn sm" id="upgradeGarageBtn" style="margin-top:8px;">⬆️ Расширить гараж</button>
+      </div>
+      <div class="empty"><div class="big">🔧</div>${saleCache.length ? 'Все машины выставлены на продажу' : 'Гараж пуст. Купи первую машину!'}</div>
+      ${renderSaleSection()}
+    `;
+    $('#upgradeGarageBtn')?.addEventListener('click', upgradeGarage);
+    $$('[data-unlist]').forEach(b => b.addEventListener('click', () => unlistCar(b.dataset.unlist)));
+    return;
+  }
+
+  const parts = [['engine'],['body'],['suspension'],['gearbox'],['electric'],['interior'],['tires'],['oil']];
+
+  el.innerHTML = `
+    <div class="car-row" style="background:linear-gradient(135deg,rgba(79,140,255,.1),transparent);">
+      <div class="row"><span>Гараж</span><b>${garageCache.length} / ${cap}</b></div>
+      ${saleCache.length ? `<div class="row"><span>На продаже</span><b style="color:var(--yellow)">${saleCache.length} шт</b></div>` : ''}
+      <button class="btn sm" id="upgradeGarageBtn" style="margin-top:8px;">⬆️ Расширить гараж</button>
+    </div>
+  ` + garageCache.map(c => {
+    const cond = c.condition || {};
+    const avg = parts.reduce((s,[k]) => s + (cond[k] || 0), 0) / parts.length;
+    const est = c.market_value - c.buy_price - c.repair_cost;
+    return `<div class="car-row">
+      <div class="title">${esc(c.brand)} ${esc(c.model)}, ${c.year}</div>
+      <div class="row"><span>Пробег</span><b>${c.mileage.toLocaleString('ru-RU')} км</b></div>
+      <div class="row"><span>Куплена за</span><b>${fmt(c.buy_price)}</b></div>
+      <div class="row"><span>Ремонт</span><b>${fmt(c.repair_cost)}</b></div>
+      <div class="row"><span>Рынок</span><b>${fmt(c.market_value)}</b></div>
+      <div class="condition-bar"><div style="width:${avg}%"></div></div>
+      <div class="profit ${est < 0 ? 'neg' : ''}">Прибыль: ${est >= 0 ? '+' : ''}${fmt(est)}</div>
+      <div class="actions" style="display:flex;gap:6px">
+        <button class="btn sm ghost" data-repair="${c.id}">🔧 Ремонт</button>
+        <button class="btn sm green" data-list="${c.id}">💰 Продать</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.insertAdjacentHTML('beforeend', renderSaleSection());
+  $('#upgradeGarageBtn')?.addEventListener('click', upgradeGarage);
+  $$('[data-repair]').forEach(b => b.addEventListener('click', () => repairModal(b.dataset.repair)));
+  $$('[data-list]').forEach(b => b.addEventListener('click', () => listForSaleModal(b.dataset.list)));
+  $$('[data-unlist]').forEach(b => b.addEventListener('click', () => unlistCar(b.dataset.unlist)));
+}
+
+async function unlistCar(carId) {
+  if (!confirm('Убрать машину с продажи? Она вернётся в гараж.')) return;
+  const { data, error } = await sb.rpc('rpc_unlist_car', { p_car_id: carId });
+  if (error || !data?.ok) { toast(data?.error || error?.message || 'Ошибка', 'err'); return; }
+  toast('✅ Машина снята с продажи', 'ok');
+  await renderGarage();
+}
+
+async function upgradeGarage() {
+  const cap = profile.garage_capacity || 2;
+  const cost = 50000 * cap;
+  if (!confirm(`Расширить гараж до ${cap + 1} мест за ${fmt(cost)}?`)) return;
+  const { data, error } = await sb.rpc('rpc_upgrade_garage');
+  if (error || !data?.ok) { toast(data?.error || error?.message || 'Ошибка', 'err'); return; }
+  toast('✅ Гараж расширен до ' + data.new_capacity + ' мест', 'ok');
+  await refreshProfile();
+  await renderGarage();
+}
+
+/* ============ РЕМОНТ ============ */
+function repairModal(carId) {
+  const car = garageCache.find(c => c.id === carId);
+  if (!car) return;
+  const parts = [
+    ['engine','Двигатель',40000,3],['body','Кузов',25000,3],
+    ['suspension','Подвеска',15000,3],['gearbox','Коробка',35000,3],
+    ['electric','Электрика',12000,3],['interior','Салон',8000,3],
+    ['tires','Шины',10000,3],['oil','Масло',3000,1]
+  ];
+  const cond = car.condition || {};
+  const ups = car.parts_upgrades || {};
+
+  const html = `
+    <h3>🔧 Ремонт ${esc(car.brand)} ${esc(car.model)}</h3>
+    <p>Каждую деталь можно улучшить до 3 раз. Масло — только 1 раз.</p>
+    ${parts.map(([k,n,cost,max]) => {
+      const v = cond[k] ?? 50;
+      const u = ups[k] || 0;
+      const maxed = u >= max;
+      const disabled = maxed ? 'disabled' : '';
+      return `<div class="modal-row">
+        <span class="k">${n} — ${v}%<span class="upgrade-badge ${maxed ? 'max' : ''}">${u}/${max}</span></span>
+        <button class="btn sm ${disabled?'ghost':'primary'}" ${disabled} data-part="${k}">${maxed ? '✅ МАКС' : fmt(cost)}</button>
+      </div>`;
+    }).join('')}
+    <button class="btn yellow" id="repairAllBtn" style="margin-top:14px;">🔧 Улучшить всё</button>
+    <button class="btn ghost" style="margin-top:8px" data-close="1">Закрыть</button>
+  `;
+  openModal(html);
+  bindCloseButtons();
+
+  $('#repairAllBtn')?.addEventListener('click', async () => {
+    if (!confirm('Улучшить все детали до максимума? Может стоить дорого.')) return;
+
+    const btn = $('#repairAllBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Ремонтирую...';
+
+    const { data, error } = await sb.rpc('rpc_repair_car_all', { p_car_id: carId });
+    if (error || !data?.ok) {
+      toast(data?.error || error?.message || 'Ошибка', 'err');
+      btn.disabled = false;
+      btn.textContent = '🔧 Улучшить всё';
+      return;
+    }
+
+    toast('✅ Улучшено: ' + data.parts_fixed + ' дет. Потрачено ' + fmt(data.total_cost), 'ok');
+    await refreshProfile();
+    closeModal();
+    await renderGarage();
+  });
+
+  $$('[data-part]').forEach(b => b.addEventListener('click', async () => {
+    b.disabled = true;
+    const { data, error } = await sb.rpc('rpc_repair_car', { p_car_id: carId, p_part: b.dataset.part });
+    if (error || !data?.ok) { toast(data?.error || error?.message || 'Ошибка', 'err'); b.disabled = false; return; }
+    toast('✅ Улучшено до ' + data.new_condition + '% (ур. ' + data.upgrades + ')', 'ok');
+    await refreshProfile();
+    closeModal();
+    await renderGarage();
+  }));
+}
+
+/* ============ ВЫСТАВИТЬ НА ПРОДАЖУ ============ */
+function listForSaleModal(carId) {
+  const car = garageCache.find(c => c.id === carId);
+  if (!car) { toast('Машина не найдена', 'err'); return; }
+  const suggested = Math.round(car.market_value);
+  const maxAllowed = Math.round(car.market_value * 1.2);
+
+  const html = `
+    <h3>💰 Выставить на продажу</h3>
+    <p>${esc(car.brand)} ${esc(car.model)}, ${car.year}</p>
+    <div class="modal-row"><span class="k">Куплена за</span><span class="v">${fmt(car.buy_price)}</span></div>
+    <div class="modal-row"><span class="k">Ремонт</span><span class="v">${fmt(car.repair_cost)}</span></div>
+    <div class="modal-row"><span class="k">Рекомендуемая цена</span><span class="v">${fmt(suggested)}</span></div>
+
+    <p style="margin-top:16px;color:var(--muted);font-size:12px;">Кому продавать?</p>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button class="btn ghost" id="saleNPC" style="flex:1;border:2px solid var(--accent);color:var(--accent);">🤖 NPC</button>
+      <button class="btn ghost" id="salePlayers" style="flex:1;">👥 Игрокам</button>
+    </div>
+    <p id="saleHint" style="font-size:11px;color:var(--muted);margin:-8px 0 12px 0;">NPC придёт сам через 1-5 минут.</p>
+
+    <input id="listPrice" type="text" inputmode="numeric" value="${fmtInput(suggested)}">
+
+    <div class="price-info" id="priceInfo">
+      Лимит NPC: <b>${fmt(maxAllowed)}</b> (1.2× рынка).<br>
+      Рынок: <b>${fmt(car.market_value)}</b>. Ты ставишь: <b id="priceNow">${fmt(suggested)}</b> — <span id="priceDiff">в пределах лимита</span>.
+    </div>
+
+    <div class="warn-box" id="priceWarn" style="display:none;">
+      ⚠️ <b>Внимание:</b> NPC не купит дороже <b>${fmt(maxAllowed)}</b>. Хочешь больше — продавай игрокам.
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn ghost" data-close="1">Отмена</button>
+      <button class="btn green" id="listBtn">Выставить</button>
+    </div>
+  `;
+  openModal(html);
+  bindCloseButtons();
+
+  let saleType = 'npc';
+  const btnNPC = document.getElementById('saleNPC');
+  const btnPlayers = document.getElementById('salePlayers');
+  const hint = document.getElementById('saleHint');
+  const priceInput = document.getElementById('listPrice');
+  const priceWarn = document.getElementById('priceWarn');
+
+  function setType(type) {
+    saleType = type;
+    if (type === 'npc') {
+      btnNPC.style.border = '2px solid var(--accent)'; btnNPC.style.color = 'var(--accent)';
+      btnPlayers.style.border = '1px solid var(--line)'; btnPlayers.style.color = 'var(--muted)';
+      hint.textContent = 'NPC придёт сам через 1-5 минут.';
+    } else {
+      btnPlayers.style.border = '2px solid var(--accent)'; btnPlayers.style.color = 'var(--accent)';
+      btnNPC.style.border = '1px solid var(--line)'; btnNPC.style.color = 'var(--muted)';
+      hint.textContent = 'Объявление увидят живые игроки.';
+    }
+    updatePriceInfo();
+  }
+
+  function updatePriceInfo() {
+    const val = parseNum(priceInput.value);
+    const diffEl = document.getElementById('priceDiff');
+    const nowEl = document.getElementById('priceNow');
+
+    if (nowEl) nowEl.textContent = val ? fmt(val) : '—';
+
+    const limit = saleType === 'npc' ? maxAllowed : Math.round(car.market_value * 3);
+
+    let text = '';
+    if (!val) {
+      text = 'введи цену';
+    } else if (val > limit) {
+      const over = val - limit;
+      const pct = ((over / limit) * 100).toFixed(1);
+      text = `<span class="up">выше лимита на ${fmt(over)} (+${pct}%)</span>`;
+    } else if (val < car.market_value) {
+      const under = car.market_value - val;
+      const pct = ((under / car.market_value) * 100).toFixed(1);
+      text = `<span class="down">ниже рынка на ${fmt(under)} (−${pct}%)</span>`;
+    } else {
+      text = 'в пределах лимита';
+    }
+    if (diffEl) diffEl.innerHTML = text;
+
+    if (saleType === 'npc' && val > maxAllowed) {
+      priceWarn.style.display = 'block';
+    } else {
+      priceWarn.style.display = 'none';
+    }
+  }
+
+  attachPriceInput(priceInput, () => updatePriceInfo());
+
+  btnNPC.onclick = () => setType('npc');
+  btnPlayers.onclick = () => setType('players');
+  setType('npc');
+
+  $('#listBtn').onclick = async () => {
+    const val = parseNum(priceInput.value);
+    if (!val || val <= 0) { toast('Введи цену', 'warn'); return; }
+    if (saleType === 'npc' && val > maxAllowed) {
+      if (!confirm(`Цена выше ${fmt(maxAllowed)} — NPC не купит. Продолжить?`)) return;
+    }
+
+    $('#listBtn').disabled = true;
+    const { data, error } = await sb.rpc('rpc_list_car', { p_car_id: carId, p_price: val, p_sale_type: saleType });
+    if (error || !data?.ok) { toast(data?.error || error?.message || 'Ошибка', 'err'); $('#listBtn').disabled = false; return; }
+    closeModal();
+    if (saleType === 'npc') toast('✅ NPC придёт в течение 1-5 мин', 'ok');
+    else toast('✅ Опубликовано для игроков', 'ok');
+    await renderGarage();
+  };
+}
+
+/* ============ ПРОДАЖИ / ИСТОРИЯ ============ */
+async function renderSales() {
+  const { data: listings } = await sb.from('player_cars').select('*').eq('owner_id', currentUser.id).eq('status', 'listed');
+  const el = $('#myListings');
+  if (!listings || !listings.length) {
+    el.innerHTML = '<div class="empty"><div class="big">📢</div>Нет активных объявлений</div>';
+  } else {
+    el.innerHTML = listings.map(l => `
+      <div class="car-row">
+        <div class="title">${esc(l.brand)} ${esc(l.model)}, ${l.year}</div>
+        <div class="row"><span>Цена</span><b>${fmt(l.market_value)}</b></div>
+        <div class="row"><span>Кому</span><b>${l.sale_type === 'players' ? '👥 Игроки' : '🤖 NPC'}</b></div>
+      </div>`).join('');
+  }
+
+  const { data: txs } = await sb.from('transactions').select('*').eq('player_id', currentUser.id).order('created_at', { ascending: false }).limit(50);
+  const hist = $('#history');
+  if (!txs || !txs.length) { hist.innerHTML = '<div class="empty"><div class="big">📊</div>История пуста</div>'; return; }
+  const typeLabels = { buy:'Покупка', sell:'Продажа', repair:'Ремонт', inspection:'Осмотр', bonus:'Бонус', fine:'Штраф' };
+  hist.innerHTML = txs.map(t => `
+    <div class="tx">
+      <div class="tx-info">
+        <div class="tx-title">${typeLabels[t.type] || t.type} ${t.car_brand ? '— ' + esc(t.car_brand) + ' ' + esc(t.car_model) : ''}</div>
+        <div class="tx-date">${new Date(t.created_at).toLocaleString('ru-RU')}</div>
+      </div>
+      <div class="tx-amount ${t.amount >= 0 ? 'pos' : 'neg'}">${t.amount >= 0 ? '+' : ''}${fmt(t.amount)}</div>
+    </div>`).join('');
+}
+
+/* ============ РЫНОК ЦЕН ============ */
+async function renderMarket() {
+  const { data: prices } = await sb.from('market_prices').select('*, car:cars(*)').order('current_price', { ascending: true });
+  const el = $('#marketPrices');
+  if (!prices || !prices.length) { el.innerHTML = '<div class="empty">Нет данных</div>'; }
+  else {
+    el.innerHTML = prices.map(p => {
+      const car = p.car || {};
+      const diff = p.current_price - p.base_price;
+      const pct = (diff / p.base_price * 100).toFixed(1);
+      return `<div class="car-row">
+        <div class="title">${esc(car.brand || '')} ${esc(car.model || '')}</div>
+        <div class="row"><span>Базовая</span><b>${fmt(p.base_price)}</b></div>
+        <div class="row"><span>Текущая</span><b style="color:var(--accent)">${fmt(p.current_price)}</b></div>
+        <div class="row"><span>Тренд</span><b style="color:${diff >= 0 ? 'var(--green)' : 'var(--red)'}">${diff >= 0 ? '+' : ''}${pct}%</b></div>
+      </div>`;
+    }).join('');
+  }
+  const { data: events } = await sb.from('market_events').select('*').gt('expires_at', new Date().toISOString());
+  const ev = $('#marketEvents');
+  if (!events || !events.length) { ev.innerHTML = '<div class="empty">Событий нет</div>'; }
+  else {
+    ev.innerHTML = events.map(e => `
+      <div class="car-row">
+        <div class="title">⚡ ${esc(e.description)}</div>
+        <div class="row"><span>Множитель</span><b>×${e.multiplier}</b></div>
+        <div class="row"><span>До</span><b>${new Date(e.expires_at).toLocaleString('ru-RU')}</b></div>
+      </div>`).join('');
+  }
+}
+
+/* ============ ПРОФИЛЬ ============ */
+async function renderProfileFull() {
+  await refreshProfile();
+  $('#profName').textContent = profile.username;
+  $('#profLevel').textContent = 'Уровень ' + profile.level;
+  const need = xpForLevel(profile.level);
+  $('#profXpFill').style.width = Math.min(100, (profile.experience/need)*100) + '%';
+  $('#profXpText').textContent = profile.experience + ' / ' + need + ' XP';
+  $('#profBalance').textContent = fmt(profile.balance);
+  $('#profBought').textContent = profile.cars_bought;
+  $('#profSold').textContent = profile.cars_sold;
+  $('#profProfit').textContent = fmtShort(profile.total_profit);
+
+  const { data: all } = await sb.from('achievements').select('*');
+  const { data: mine } = await sb.from('player_achievements').select('achievement_id').eq('player_id', currentUser.id);
+  const unlocked = new Set((mine || []).map(x => x.achievement_id));
+
+  $('#achievements').innerHTML = (all || []).map(a => `
+    <div class="ach ${unlocked.has(a.id) ? 'unlocked' : ''}">
+      <div class="ico">${a.icon}</div>
+      <div class="t">${esc(a.title)}</div>
+      <div class="d">${esc(a.description)}</div>
+    </div>`).join('');
+}
+
+/* ============ REALTIME ============ */
+function subscribeRealtime() {
+  sb.channel('listings-rt')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' },
+      () => { if (currentScreen === 'listings') renderListings(); })
+    .subscribe();
+  sb.channel('chats-rt')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' },
+      () => {
+        // ВАЖНО: renderTripScreen здесь НЕ вызываем — у него свой поллинг,
+        // иначе плодятся интервалы и тосты "Прибыл!" летят каскадом.
+        if (currentScreen === 'chats') renderChats();
+      })
+    .subscribe();
+}
+
+/* ============ MODAL HELPERS ============ */
+function bindCloseButtons() {
+  $$('[data-close]').forEach(b => b.addEventListener('click', () => closeModal()));
+}
+$('#modal').addEventListener('click', e => {
+  if (e.target.id === 'modal' || e.target.dataset.close) closeModal();
+});
+
+/* ============ АДМИН-ПАНЕЛЬ ============ */
+let isAdmin = false;
+
+async function checkAdmin() {
+  try {
+    const { data } = await sb.rpc('rpc_is_admin');
+    isAdmin = !!data;
+    if (isAdmin) $('#adminSection')?.classList.remove('hidden');
+  } catch (e) {}
+}
+
+$('#adminBtn')?.addEventListener('click', openAdminPanel);
+
+async function openAdminPanel() {
+  openModal(`
+    <h3>⚙️ Админ-панель</h3>
+    <p>Используй с умом 😎</p>
+    <button class="btn green" id="admGiveSelf">💰 Выдать себе</button>
+    <button class="btn primary" style="margin-top:8px;" id="admGiveOther">👤 Выдать игроку</button>
+    <button class="btn yellow" id="admSendNpc" style="margin-top:8px;">🎭 Написать от NPC</button>
+    <button class="btn ghost" style="margin-top:8px;" id="admPlayers">📋 Список игроков</button>
+    <button class="btn red" style="margin-top:8px;" id="admClearNpc">🗑 Удалить NPC-объявления</button>
+    <button class="btn ghost" data-close="1" style="margin-top:14px;">Закрыть</button>
+  `);
+  bindCloseButtons();
+  $('#admGiveSelf').onclick = () => adminGiveSelf();
+  $('#admGiveOther').onclick = () => adminGiveOther();
+  $('#admSendNpc').onclick = () => adminSendAsNpc();
+  $('#admPlayers').onclick = () => adminListPlayers();
+  $('#admClearNpc').onclick = () => adminClearNpc();
+}
+
+async function adminGiveSelf() {
+  openModal(`
+    <h3>💰 Выдать себе</h3>
+    <input id="admAmount" type="text" inputmode="numeric" value="1.000.000">
+    <div class="modal-actions">
+      <button class="btn ghost" data-close="1">Отмена</button>
+      <button class="btn green" id="admConfirm">Выдать</button>
+    </div>
+  `);
+  bindCloseButtons();
+  const input = $('#admAmount');
+  attachPriceInput(input);
+  $('#admConfirm').onclick = async () => {
+    const amount = parseNum(input.value);
+    if (!amount) return toast('Введи сумму', 'warn');
+    const { data, error } = await sb.rpc('rpc_admin_give_self', { p_amount: amount });
+    if (error || !data?.ok) return toast(data?.error || error?.message || 'Ошибка', 'err');
+    toast('✅ +' + fmt(amount), 'ok');
+    closeModal();
+    await refreshProfile();
+  };
+}
+
+async function adminGiveOther() {
+  openModal(`
+    <h3>👤 Выдать игроку</h3>
+    <input id="admTarget" type="text" placeholder="Ник игрока">
+    <input id="admAmount" type="text" inputmode="numeric" value="100.000">
+    <div class="modal-actions">
+      <button class="btn ghost" data-close="1">Отмена</button>
+      <button class="btn green" id="admConfirm">Выдать</button>
+    </div>
+  `);
+  bindCloseButtons();
+  const input = $('#admAmount');
+  attachPriceInput(input);
+  $('#admConfirm').onclick = async () => {
+    const target = $('#admTarget').value.trim();
+    const amount = parseNum(input.value);
+    if (!target || !amount) return toast('Заполни всё', 'warn');
+    const { data, error } = await sb.rpc('rpc_admin_give_money', { p_username: target, p_amount: amount });
+    if (error || !data?.ok) return toast(data?.error || error?.message || 'Ошибка', 'err');
+    toast('✅ +' + fmt(amount) + ' игроку ' + esc(target), 'ok');
+    closeModal();
+  };
+}
+
+async function adminSendAsNpc() {
+  openModal(`
+    <h3>🎭 Написать от NPC</h3>
+    <input id="admTarget" type="text" placeholder="Ник игрока">
+    <input id="admText" type="text" placeholder="Текст сообщения">
+    <div class="modal-actions">
+      <button class="btn ghost" data-close="1">Отмена</button>
+      <button class="btn yellow" id="admConfirm">Отправить</button>
+    </div>
+  `);
+  bindCloseButtons();
+  $('#admConfirm').onclick = async () => {
+    const target = $('#admTarget').value.trim();
+    const text = $('#admText').value.trim();
+    if (!target || !text) return toast('Заполни всё', 'warn');
+    const { data, error } = await sb.rpc('rpc_admin_send_as_npc', { p_username: target, p_text: text });
+    if (error || !data?.ok) return toast(data?.error || error?.message || 'Ошибка', 'err');
+    toast('🎭 Отправлено!', 'ok');
+    closeModal();
+  };
+}
+
+async function adminListPlayers() {
+  const { data, error } = await sb.rpc('rpc_admin_list_players');
+  if (error || !data?.ok) return toast(data?.error || error?.message || 'Ошибка', 'err');
+  const players = data.players || [];
+  openModal(`
+    <h3>📋 Игроки (${players.length})</h3>
+    <div style="max-height:60vh;overflow-y:auto;">
+      ${players.map(p => `
+        <div class="car-row" style="margin-bottom:8px;">
+          <div class="title">${esc(p.username)} · Lv. ${esc(p.level)}</div>
+          <div class="row"><span>Баланс</span><b style="color:var(--yellow)">${fmt(p.balance)}</b></div>
+          <div class="row"><span>Продано</span><b>${esc(p.cars_sold)}</b></div>
+          <div class="row"><span>Прибыль</span><b>${fmt(p.total_profit)}</b></div>
+        </div>
+      `).join('')}
+    </div>
+    <button class="btn ghost" data-close="1" style="margin-top:12px;">Закрыть</button>
+  `);
+  bindCloseButtons();
+}
+
+async function adminClearNpc() {
+  if (!confirm('Удалить ВСЕ NPC-объявления?')) return;
+  const { data, error } = await sb.rpc('rpc_admin_clear_npc_listings');
+  if (error || !data?.ok) return toast(data?.error || error?.message || 'Ошибка', 'err');
+  toast('✅ Все NPC-объявления удалены', 'ok');
+  closeModal();
+}
+
+/* ============ СТАРТ ============ */
+(async () => {
+  showLoader();
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) await initAfterAuth();
+    else { hideLoader(); $('#authScreen').classList.remove('hidden'); }
+  } catch (e) {
+    console.error(e);
+    hideLoader();
+    $('#authScreen').classList.remove('hidden');
+  }
+})();
+
+sb.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT') location.reload();
+});
+</script>
+</body>
+</html>
